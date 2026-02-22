@@ -55,6 +55,12 @@ Generate a student scaffold from reference code:
 python tools/make_student_scaffold.py --input src/pycie --output dist/student/src/pycie --labs all
 ```
 
+Run tests against scaffold output (instead of reference source):
+
+```bash
+PYCIE_SRC=dist/student/src pytest -m "lab01 and exercise"
+```
+
 ## Suggested pacing
 
 1. Lab 01: 3-5 days

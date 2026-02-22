@@ -33,6 +33,8 @@ source .venv/bin/activate
 pip install -e .[dev]
 ```
 
+If your environment is offline, skip install and run tests directly from source.
+
 ## Run tests
 
 Default test run (contract checks only):
@@ -65,6 +67,12 @@ Generate a subset (example: lab07 and lab08 only):
 
 ```bash
 python tools/make_student_scaffold.py --input src/pycie --output dist/student/src/pycie --labs lab07,lab08
+```
+
+Run tests against generated student scaffold code:
+
+```bash
+PYCIE_SRC=dist/student/src pytest -m "lab07 and exercise"
 ```
 
 ## Documentation
