@@ -3,15 +3,21 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from pycie.sim.network import Frame
 
 from .base import ProtocolBase
 
 
+class ARPOpcode(StrEnum):
+    REQUEST = "request"
+    REPLY = "reply"
+
+
 @dataclass(frozen=True)
 class ARPMessage:
-    opcode: str  # request | reply
+    opcode: "ARPOpcode | str"
     sender_ip: str
     sender_mac: str
     target_ip: str
@@ -43,7 +49,7 @@ class ARPProcess(ProtocolBase):
     def build_request(self, sender_ip: str, sender_mac: str, target_ip: str) -> ARPMessage:
         """Construct an ARP request."""
         return ARPMessage(
-            opcode="request",
+            opcode=ARPOpcode.REQUEST,
             sender_ip=sender_ip,
             sender_mac=sender_mac,
             target_ip=target_ip,
@@ -59,7 +65,7 @@ class ARPProcess(ProtocolBase):
     ) -> ARPMessage:
         """Construct an ARP reply."""
         return ARPMessage(
-            opcode="reply",
+            opcode=ARPOpcode.REPLY,
             sender_ip=sender_ip,
             sender_mac=sender_mac,
             target_ip=target_ip,
@@ -70,7 +76,7 @@ class ARPProcess(ProtocolBase):
         """Update ARP state and emit response actions when needed."""
         self.ip_to_mac[msg.sender_ip] = msg.sender_mac
 
-        if msg.opcode != "request":
+        if ARPOpcode(msg.opcode) != ARPOpcode.REQUEST:
             return
         local_ip = self.local_ips.get(ingress_if)
         local_mac = self.local_macs.get(ingress_if)

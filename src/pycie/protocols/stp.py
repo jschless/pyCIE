@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from pycie.sim.network import Frame
 
@@ -25,13 +26,24 @@ class BPDU:
     max_age_ms: int = 20_000
 
 
+class STPRole(StrEnum):
+    DESIGNATED = "DESIGNATED"
+    ROOT = "ROOT"
+    ALTERNATE = "ALTERNATE"
+
+
+class STPState(StrEnum):
+    FORWARDING = "FORWARDING"
+    BLOCKING = "BLOCKING"
+
+
 @dataclass
 class STPPort:
     if_name: str
     port_id: int
     path_cost: int = 4
-    role: str = "DESIGNATED"
-    state: str = "FORWARDING"
+    role: "STPRole | str" = STPRole.DESIGNATED
+    state: "STPState | str" = STPState.FORWARDING
 
 
 @dataclass
@@ -111,21 +123,21 @@ class STPProcess(ProtocolBase):
         if self.root_id == self.bridge_id or self.root_port is None:
             self.root_port = None
             for port in self.ports.values():
-                port.role = "DESIGNATED"
-                port.state = "FORWARDING"
+                port.role = STPRole.DESIGNATED
+                port.state = STPState.FORWARDING
             return
 
         for if_name, port in self.ports.items():
             if if_name == self.root_port:
-                port.role = "ROOT"
-                port.state = "FORWARDING"
+                port.role = STPRole.ROOT
+                port.state = STPState.FORWARDING
             else:
-                port.role = "ALTERNATE"
-                port.state = "BLOCKING"
+                port.role = STPRole.ALTERNATE
+                port.state = STPState.BLOCKING
 
     def should_forward_data(self, if_name: str) -> bool:
         """Return True if the port is in a forwarding state."""
         port = self.ports.get(if_name)
         if port is None:
             return False
-        return port.state == "FORWARDING"
+        return STPState(port.state) == STPState.FORWARDING

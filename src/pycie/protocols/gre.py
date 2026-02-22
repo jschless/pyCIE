@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from pycie.forwarding.encapsulation import EncapsulationPipeline, TunnelConfig
+from pycie.forwarding.encapsulation import EncapsulationPipeline, TunnelConfig, TunnelMode
 from pycie.model.headers import GREHeader, IPv4Header
 from pycie.model.packet import PacketStack
 
@@ -40,7 +40,7 @@ class GRETunnelProcess(ProtocolBase):
             TunnelConfig(
                 tunnel_src=tunnel.source_ip,
                 tunnel_dst=tunnel.destination_ip,
-                mode="gre",
+                mode=TunnelMode.GRE,
                 key=tunnel.key,
             ),
         )
@@ -62,5 +62,5 @@ class GRETunnelProcess(ProtocolBase):
         if tunnel_id is None:
             tunnel_id = "default-gre"
 
-        inner = self._pipeline.decapsulate(packet, "gre")
+        inner = self._pipeline.decapsulate(packet, TunnelMode.GRE)
         return tunnel_id, inner

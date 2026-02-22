@@ -3,7 +3,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 from typing import Any
+
+
+class ScenarioActionType(StrEnum):
+    FAIL_LINK = "fail_link"
+    FAIL_BGP_PEER = "fail_bgp_peer"
+
+
+class ExpectationKind(StrEnum):
+    EVENT_SEEN = "event_seen"
+    CONVERGENCE_MS_LTE = "convergence_ms_lte"
+    ROUTE_PRESENT = "route_present"
 
 
 @dataclass(frozen=True)
@@ -15,13 +27,13 @@ class TopologySpec:
 @dataclass(frozen=True)
 class ScenarioAction:
     at_ms: int
-    action: str
+    action: "ScenarioActionType | str"
     params: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
 class Expectation:
-    kind: str
+    kind: "ExpectationKind | str"
     selector: str
     expected: Any
 

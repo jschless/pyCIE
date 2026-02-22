@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from pycie.sim.network import Frame
 
@@ -25,12 +26,22 @@ class RSTPBPDU:
     agreement: bool = False
 
 
+class RSTPRole(StrEnum):
+    DESIGNATED = "DESIGNATED"
+    ROOT = "ROOT"
+
+
+class RSTPState(StrEnum):
+    FORWARDING = "FORWARDING"
+    DISCARDING = "DISCARDING"
+
+
 @dataclass
 class RSTPPort:
     if_name: str
     port_id: int
-    role: str = "DESIGNATED"
-    state: str = "DISCARDING"
+    role: "RSTPRole | str" = RSTPRole.DESIGNATED
+    state: "RSTPState | str" = RSTPState.DISCARDING
     proposed: bool = False
     agreed: bool = False
 
@@ -58,8 +69,8 @@ class RSTPProcess(ProtocolBase):
         self.root_id = self.bridge_id
         self.root_port = None
         for port in self.ports.values():
-            port.role = "DESIGNATED"
-            port.state = "FORWARDING"
+            port.role = RSTPRole.DESIGNATED
+            port.state = RSTPState.FORWARDING
             port.proposed = False
             port.agreed = False
 
@@ -79,20 +90,20 @@ class RSTPProcess(ProtocolBase):
             self.root_port = ingress_if
 
         if self.root_port == ingress_if:
-            port.role = "ROOT"
-            port.state = "FORWARDING"
+            port.role = RSTPRole.ROOT
+            port.state = RSTPState.FORWARDING
         else:
-            port.role = "DESIGNATED"
+            port.role = RSTPRole.DESIGNATED
 
         port.proposed = bpdu.proposal
         if bpdu.proposal:
             port.agreed = True
-            port.state = "FORWARDING"
+            port.state = RSTPState.FORWARDING
         elif not bpdu.agreement:
-            port.state = "DISCARDING"
+            port.state = RSTPState.DISCARDING
         else:
             port.agreed = True
-            port.state = "FORWARDING"
+            port.state = RSTPState.FORWARDING
 
     def transmit_bpdu(self, if_name: str, proposal: bool, agreement: bool) -> RSTPBPDU:
         """Build a BPDU reflecting current root/port state."""

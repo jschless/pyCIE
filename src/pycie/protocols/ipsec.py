@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 from ipaddress import ip_address, ip_network
 
 from pycie.model.headers import ESPHeader, IPv4Header
@@ -11,12 +12,22 @@ from pycie.model.packet import PacketStack
 from .base import ProtocolBase
 
 
+class IPSecMode(StrEnum):
+    TUNNEL = "tunnel"
+
+
+class IPSecPolicyAction(StrEnum):
+    PROTECT = "protect"
+    BYPASS = "bypass"
+    DROP = "drop"
+
+
 @dataclass(frozen=True)
 class SecurityAssociation:
     spi: int
     src_ip: str
     dst_ip: str
-    mode: str = "tunnel"
+    mode: "IPSecMode | str" = IPSecMode.TUNNEL
     encryption: str = "aes-gcm"
     auth: str = "sha256"
 
@@ -26,7 +37,7 @@ class SecurityPolicy:
     policy_id: str
     src_prefix: str
     dst_prefix: str
-    action: str  # protect | bypass | drop
+    action: "IPSecPolicyAction | str"
     sa_spi: int | None = None
 
 
@@ -49,51 +60,52 @@ class IPsecProcess(ProtocolBase):
     def install_policy(self, policy: SecurityPolicy) -> None:
         self.spd.append(policy)
 
-    def outbound(self, packet: PacketStack) -> tuple[str, PacketStack | None]:
+    def outbound(self, packet: PacketStack) -> tuple["IPSecPolicyAction | str", PacketStack | None]:
         """Return (action, packet_or_none) after SPD/SAD outbound processing."""
         ip_header = next((h for h in packet.headers if isinstance(h, IPv4Header)), None)
         if ip_header is None:
-            return "drop", None
+            return IPSecPolicyAction.DROP, None
 
         policy = self._match_policy(ip_header.src_ip, ip_header.dst_ip)
         if policy is None:
-            return "bypass", packet.clone()
+            return IPSecPolicyAction.BYPASS, packet.clone()
 
-        if policy.action == "drop":
-            return "drop", None
-        if policy.action == "bypass":
-            return "bypass", packet.clone()
+        action = IPSecPolicyAction(policy.action)
+        if action == IPSecPolicyAction.DROP:
+            return IPSecPolicyAction.DROP, None
+        if action == IPSecPolicyAction.BYPASS:
+            return IPSecPolicyAction.BYPASS, packet.clone()
 
         if policy.sa_spi is None:
-            return "drop", None
+            return IPSecPolicyAction.DROP, None
         sa = self.sad.get(policy.sa_spi)
         if sa is None:
-            return "drop", None
+            return IPSecPolicyAction.DROP, None
 
         protected = packet.clone()
         protected.push_header(ESPHeader(spi=sa.spi, sequence=1, encrypted=True))
         protected.push_header(IPv4Header(src_ip=sa.src_ip, dst_ip=sa.dst_ip, protocol=50))
-        return "protect", protected
+        return IPSecPolicyAction.PROTECT, protected
 
-    def inbound(self, packet: PacketStack) -> tuple[str, PacketStack | None]:
+    def inbound(self, packet: PacketStack) -> tuple["IPSecPolicyAction | str", PacketStack | None]:
         """Return (action, packet_or_none) after inbound ESP processing."""
         if not packet.headers:
-            return "drop", None
+            return IPSecPolicyAction.DROP, None
 
         outer = packet.headers[0]
         if not isinstance(outer, IPv4Header) or outer.protocol != 50:
-            return "bypass", packet.clone()
+            return IPSecPolicyAction.BYPASS, packet.clone()
 
         if len(packet.headers) < 2 or not isinstance(packet.headers[1], ESPHeader):
-            return "drop", None
+            return IPSecPolicyAction.DROP, None
 
         esp = packet.headers[1]
         if esp.spi not in self.sad:
-            return "drop", None
+            return IPSecPolicyAction.DROP, None
 
         decapped = packet.clone()
         decapped.headers = decapped.headers[2:]
-        return "protect", decapped
+        return IPSecPolicyAction.PROTECT, decapped
 
     def _match_policy(self, src_ip: str, dst_ip: str) -> SecurityPolicy | None:
         src = ip_address(src_ip)

@@ -3,17 +3,24 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from pycie.sim.network import Frame
 
 from .base import ProtocolBase
 
 
+class BFDState(StrEnum):
+    DOWN = "DOWN"
+    INIT = "INIT"
+    UP = "UP"
+
+
 @dataclass(frozen=True)
 class BFDControl:
     your_discriminator: int
     my_discriminator: int
-    state: str
+    state: "BFDState | str"
     desired_min_tx_ms: int
     required_min_rx_ms: int
     detect_mult: int
@@ -24,7 +31,7 @@ class BFDSession:
     peer_id: str
     local_discriminator: int
     remote_discriminator: int = 0
-    state: str = "DOWN"
+    state: "BFDState | str" = BFDState.DOWN
     desired_min_tx_ms: int = 300
     required_min_rx_ms: int = 300
     detect_mult: int = 3
@@ -74,10 +81,16 @@ class BFDProcess(ProtocolBase):
         session.required_min_rx_ms = packet.required_min_rx_ms
         session.detect_mult = packet.detect_mult
 
-        if packet.state == "UP":
-            session.state = "UP" if session.state in {"INIT", "UP"} else "INIT"
-        elif packet.state == "INIT":
-            session.state = "INIT"
+        packet_state = BFDState(packet.state)
+        session_state = BFDState(session.state)
+        if packet_state == BFDState.UP:
+            session.state = (
+                BFDState.UP
+                if session_state in {BFDState.INIT, BFDState.UP}
+                else BFDState.INIT
+            )
+        elif packet_state == BFDState.INIT:
+            session.state = BFDState.INIT
 
     def transmit_control(self, peer_id: str) -> BFDControl:
         """Build an outbound BFD control packet for a peer session."""
@@ -102,6 +115,6 @@ class BFDProcess(ProtocolBase):
         expired: list[str] = []
         for peer_id, session in sorted(self.sessions.items()):
             if now_ms - session.last_rx_ms >= self.detect_time_ms(peer_id):
-                session.state = "DOWN"
+                session.state = BFDState.DOWN
                 expired.append(peer_id)
         return expired

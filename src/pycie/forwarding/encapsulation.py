@@ -3,16 +3,23 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from enum import StrEnum
 
 from pycie.model.headers import ESPHeader, GREHeader, IPv4Header
 from pycie.model.packet import PacketStack
+
+
+class TunnelMode(StrEnum):
+    GRE = "gre"
+    IPIP = "ipip"
+    IPSEC = "ipsec"
 
 
 @dataclass(frozen=True)
 class TunnelConfig:
     tunnel_src: str
     tunnel_dst: str
-    mode: str  # gre | ipip | ipsec
+    mode: "TunnelMode | str"
     key: int | None = None
     ipsec_spi: int | None = None
 
@@ -22,21 +29,23 @@ class EncapsulationPipeline:
 
     def encapsulate(self, packet: PacketStack, config: TunnelConfig) -> PacketStack:
         """Return new packet with tunnel headers pushed."""
-        if config.mode == "gre":
+        mode = TunnelMode(config.mode)
+        if mode == TunnelMode.GRE:
             return self._push_gre(packet, config)
-        if config.mode == "ipsec":
+        if mode == TunnelMode.IPSEC:
             return self._push_ipsec(packet, config)
-        if config.mode == "ipip":
+        if mode == TunnelMode.IPIP:
             out = packet.clone()
             out.push_header(IPv4Header(src_ip=config.tunnel_src, dst_ip=config.tunnel_dst, protocol=4))
             return out
-        raise ValueError(f"unsupported tunnel mode {config.mode!r}")
+        raise ValueError(f"unsupported tunnel mode {mode!r}")
 
-    def decapsulate(self, packet: PacketStack, mode: str) -> PacketStack:
+    def decapsulate(self, packet: PacketStack, mode: "TunnelMode | str") -> PacketStack:
         """Return packet with expected outer tunnel headers removed."""
         out = packet.clone()
+        tunnel_mode = TunnelMode(mode)
 
-        if mode == "gre":
+        if tunnel_mode == TunnelMode.GRE:
             if len(out.headers) < 2:
                 return out
             if not isinstance(out.headers[0], IPv4Header):
@@ -48,7 +57,7 @@ class EncapsulationPipeline:
             out.headers = out.headers[2:]
             return out
 
-        if mode == "ipsec":
+        if tunnel_mode == TunnelMode.IPSEC:
             if len(out.headers) < 2:
                 return out
             if not isinstance(out.headers[0], IPv4Header):
@@ -60,12 +69,12 @@ class EncapsulationPipeline:
             out.headers = out.headers[2:]
             return out
 
-        if mode == "ipip":
+        if tunnel_mode == TunnelMode.IPIP:
             if out.headers and isinstance(out.headers[0], IPv4Header) and out.headers[0].protocol == 4:
                 out.headers = out.headers[1:]
             return out
 
-        raise ValueError(f"unsupported tunnel mode {mode!r}")
+        raise ValueError(f"unsupported tunnel mode {tunnel_mode!r}")
 
     def _push_gre(self, packet: PacketStack, config: TunnelConfig) -> PacketStack:
         out = packet.clone()

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from pycie.sim.network import Frame
 
@@ -21,10 +22,15 @@ class LabelMapping:
     next_hop: str
 
 
+class LDPNeighborState(StrEnum):
+    DOWN = "DOWN"
+    UP = "UP"
+
+
 @dataclass
 class LDPNeighbor:
     router_id: str
-    state: str = "DOWN"
+    state: "LDPNeighborState | str" = LDPNeighborState.DOWN
 
 
 @dataclass
@@ -51,7 +57,10 @@ class LDPProcess(ProtocolBase):
         """Handle hello and label mapping messages."""
         payload = frame.payload
         if isinstance(payload, LDPHello):
-            self.neighbors[payload.router_id] = LDPNeighbor(router_id=payload.router_id, state="UP")
+            self.neighbors[payload.router_id] = LDPNeighbor(
+                router_id=payload.router_id,
+                state=LDPNeighborState.UP,
+            )
         if isinstance(payload, LabelMapping):
             self.process_label_mapping(ingress_if, payload)
 

@@ -3,10 +3,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from pycie.sim.network import Frame
 
 from .base import ProtocolBase
+
+
+class BGPOrigin(StrEnum):
+    IGP = "IGP"
+    EGP = "EGP"
+    INCOMPLETE = "INCOMPLETE"
+
+
+class BGPPeerState(StrEnum):
+    IDLE = "IDLE"
+    ESTABLISHED = "ESTABLISHED"
 
 
 @dataclass(frozen=True)
@@ -23,7 +35,7 @@ class BGPUpdate:
     as_path: tuple[int, ...]
     local_pref: int = 100
     med: int = 0
-    origin: str = "IGP"
+    origin: "BGPOrigin | str" = BGPOrigin.IGP
 
 
 @dataclass
@@ -31,7 +43,7 @@ class BGPPeer:
     peer_id: str
     peer_as: int
     is_ibgp: bool
-    state: str = "IDLE"
+    state: "BGPPeerState | str" = BGPPeerState.IDLE
     hold_time_s: int = 90
     keepalive_s: int = 30
 
@@ -69,7 +81,7 @@ class BGPProcess(ProtocolBase):
         """Drive peer FSM through OPEN/ESTABLISHED."""
         if peer_id not in self.peers:
             return
-        self.peers[peer_id].state = "ESTABLISHED"
+        self.peers[peer_id].state = BGPPeerState.ESTABLISHED
 
     def process_open(self, peer_id: str, open_msg: BGPOpen) -> None:
         """Validate and process OPEN from peer."""
@@ -77,9 +89,9 @@ class BGPProcess(ProtocolBase):
         if peer is None:
             return
         if open_msg.asn != peer.peer_as:
-            peer.state = "IDLE"
+            peer.state = BGPPeerState.IDLE
             return
-        peer.state = "ESTABLISHED"
+        peer.state = BGPPeerState.ESTABLISHED
 
     def process_update(self, peer_id: str, update: BGPUpdate) -> None:
         """Install update into Adj-RIB-In and trigger best-path."""
@@ -107,7 +119,7 @@ class BGPProcess(ProtocolBase):
                 len(update.as_path),
                 update.med,
                 update.next_hop,
-                update.origin,
+                str(update.origin),
                 update.as_path,
             ),
         )

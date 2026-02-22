@@ -23,6 +23,35 @@ Each lab has:
 6. Run lab tests repeatedly.
 7. Write short notes explaining state transitions and tie-breakers.
 
+## Scaffold API Quick Reference
+
+Use these helpers when implementing protocol methods:
+
+- `self.device.interfaces`
+  - A `dict[str, Interface]` of local interfaces keyed by interface name.
+  - Example keys: `eth0`, `eth1`.
+- `self.now_ms`
+  - Current simulation time in milliseconds.
+  - Useful for aging and timer-based state.
+- `self.device.send_frame(egress_if, frame)`
+  - Sends a frame out a local interface name.
+- `frame.src_mac`, `frame.dst_mac`, `frame.ethertype`, `frame.payload`
+  - Fields on incoming `Frame` objects.
+- `self.node_id`
+  - Local device ID shortcut.
+
+Useful iteration patterns:
+
+```python
+for if_name in sorted(self.device.interfaces):
+    ...
+```
+
+```python
+for if_name, interface in self.device.interfaces.items():
+    ...
+```
+
 ## Commands
 
 Run base contract tests:

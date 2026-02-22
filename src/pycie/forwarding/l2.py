@@ -3,9 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from pycie.model.headers import Dot1QHeader
 from pycie.model.packet import PacketStack
+
+
+class BridgePortMode(StrEnum):
+    ACCESS = "access"
+    TRUNK = "trunk"
 
 
 @dataclass(frozen=True)
@@ -13,7 +19,7 @@ class BridgePort:
     """Bridge port access/trunk configuration."""
 
     if_name: str
-    mode: str = "access"  # access | trunk
+    mode: "BridgePortMode | str" = BridgePortMode.ACCESS
     access_vlan: int = 1
     allowed_vlans: frozenset[int] = frozenset({1})
     native_vlan: int | None = 1
@@ -39,12 +45,14 @@ class BridgeDomain:
 
         tag = next((h for h in packet.headers if isinstance(h, Dot1QHeader)), None)
 
-        if port.mode == "access":
+        mode = BridgePortMode(port.mode)
+
+        if mode == BridgePortMode.ACCESS:
             if tag is not None:
                 return None
             return port.access_vlan
 
-        if port.mode != "trunk":
+        if mode != BridgePortMode.TRUNK:
             return None
 
         if tag is not None:
@@ -75,16 +83,17 @@ class BridgeDomain:
         for if_name, port in sorted(self.ports.items()):
             if if_name == ingress_if:
                 continue
-            if port.mode == "access" and port.access_vlan == vlan:
+            mode = BridgePortMode(port.mode)
+            if mode == BridgePortMode.ACCESS and port.access_vlan == vlan:
                 flood_set.append(if_name)
-            if port.mode == "trunk" and vlan in port.allowed_vlans:
+            if mode == BridgePortMode.TRUNK and vlan in port.allowed_vlans:
                 flood_set.append(if_name)
         return flood_set
 
     def egress_should_tag(self, egress_if: str, vlan: int) -> bool:
         """Return True when VLAN should be tagged on egress trunk."""
         port = self.ports[egress_if]
-        if port.mode == "access":
+        if BridgePortMode(port.mode) == BridgePortMode.ACCESS:
             return False
         return port.native_vlan != vlan
 

@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from pycie.model.capabilities import CapabilityMatrix
-from pycie.scenario.dsl import Scenario
+from pycie.scenario.dsl import ExpectationKind, Scenario, ScenarioActionType
 
 
 @dataclass
@@ -49,26 +49,34 @@ class ScenarioRunner:
             telemetry={"events": list(self._events), "state": dict(self._state)},
         )
 
-    def apply_action(self, action: str, params: dict[str, Any]) -> None:
+    def apply_action(self, action: "ScenarioActionType | str", params: dict[str, Any]) -> None:
         """Apply a single scenario action to sim/topology/protocol state."""
-        event = {"action": action, "params": dict(params)}
+        action_enum = ScenarioActionType(action)
+        event = {"action": action_enum, "params": dict(params)}
         self._events.append(event)
 
-        if action == "fail_link":
+        if action_enum == ScenarioActionType.FAIL_LINK:
             self._state["last_failed_link"] = (params.get("a"), params.get("b"))
-        if action == "fail_bgp_peer":
+        if action_enum == ScenarioActionType.FAIL_BGP_PEER:
             self._state["bgp_peer_failed"] = (params.get("node"), params.get("peer"))
 
-    def evaluate_expectation(self, kind: str, selector: str, expected: Any) -> tuple[bool, str | None]:
+    def evaluate_expectation(
+        self,
+        kind: "ExpectationKind | str",
+        selector: str,
+        expected: Any,
+    ) -> tuple[bool, str | None]:
         """Return (ok, failure_message) for one expectation."""
-        if kind == "event_seen":
+        expectation_kind = ExpectationKind(kind)
+
+        if expectation_kind == ExpectationKind.EVENT_SEEN:
             seen = any(event.get("action") == selector for event in self._events)
             ok = seen == bool(expected)
             if ok:
                 return True, None
             return False, f"expected event_seen={expected} for {selector!r}, got {seen}"
 
-        if kind == "convergence_ms_lte":
+        if expectation_kind == ExpectationKind.CONVERGENCE_MS_LTE:
             # Baseline convergence model assumes immediate logical convergence.
             convergence_ms = 0
             ok = convergence_ms <= int(expected)
@@ -76,7 +84,7 @@ class ScenarioRunner:
                 return True, None
             return False, f"convergence {convergence_ms}ms exceeds {expected}ms"
 
-        if kind == "route_present":
+        if expectation_kind == ExpectationKind.ROUTE_PRESENT:
             # Placeholder route check hook for future simulator integration.
             present = True
             ok = present == bool(expected)
@@ -84,4 +92,4 @@ class ScenarioRunner:
                 return True, None
             return False, f"route presence for {selector!r} expected {expected}, got {present}"
 
-        return False, f"unsupported expectation kind {kind!r}"
+        return False, f"unsupported expectation kind {expectation_kind!r}"

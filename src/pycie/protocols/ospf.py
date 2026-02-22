@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import heapq
 from dataclasses import dataclass, field
+from enum import StrEnum
 
 from pycie.sim.network import Frame
 
@@ -27,10 +28,17 @@ class RouterLSA:
     links: tuple[tuple[str, int], ...]
 
 
+class OSPFNeighborState(StrEnum):
+    DOWN = "DOWN"
+    INIT = "INIT"
+    TWO_WAY = "2WAY"
+    FULL = "FULL"
+
+
 @dataclass
 class OSPFNeighbor:
     router_id: str
-    state: str = "DOWN"
+    state: "OSPFNeighborState | str" = OSPFNeighborState.DOWN
     dead_interval_ms: int = 40_000
     last_hello_ms: float = 0.0
 
@@ -78,9 +86,9 @@ class OSPFProcess(ProtocolBase):
             self.neighbors[hello.router_id] = neighbor
 
         if self.router_id in hello.neighbors:
-            neighbor.state = "FULL"
+            neighbor.state = OSPFNeighborState.FULL
         else:
-            neighbor.state = "INIT"
+            neighbor.state = OSPFNeighborState.INIT
 
         neighbor.dead_interval_ms = hello.dead_interval_ms
         neighbor.last_hello_ms = self.now_ms if hasattr(self, "device") else 0.0

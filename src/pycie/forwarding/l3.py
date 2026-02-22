@@ -3,13 +3,19 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
+from enum import StrEnum
 from ipaddress import ip_address, ip_network
-from typing import Literal
 
 from pycie.model.headers import IPv4Header
 from pycie.model.packet import PacketStack
 
-L3RouteType = Literal["connected", "static", "ospf", "bgp", "ldp"]
+
+class L3RouteType(StrEnum):
+    CONNECTED = "connected"
+    STATIC = "static"
+    OSPF = "ospf"
+    BGP = "bgp"
+    LDP = "ldp"
 
 
 @dataclass(frozen=True)
@@ -17,7 +23,7 @@ class L3Route:
     prefix: str
     next_hop: str | None
     outgoing_interface: str | None
-    route_type: L3RouteType
+    route_type: "L3RouteType | str"
     admin_distance: int
     metric: int
 
@@ -44,12 +50,16 @@ class IPv4Forwarder:
             self.routes.pop(idx)
         self.routes.append(route)
 
-    def remove_route(self, prefix: str, route_type: L3RouteType) -> None:
+    def remove_route(self, prefix: str, route_type: "L3RouteType | str") -> None:
         """Remove route candidates for prefix/source type."""
+        normalized_route_type = L3RouteType(route_type)
         self.routes = [
             route
             for route in self.routes
-            if not (route.prefix == prefix and route.route_type == route_type)
+            if not (
+                route.prefix == prefix
+                and L3RouteType(route.route_type) == normalized_route_type
+            )
         ]
 
     def lookup(self, dst_ip: str) -> L3Route | None:

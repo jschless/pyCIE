@@ -3,9 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
+from enum import StrEnum
 
 from pycie.model.headers import MPLSLabel
 from pycie.model.packet import PacketStack
+
+
+class MPLSOperation(StrEnum):
+    PUSH = "push"
+    SWAP = "swap"
+    POP = "pop"
 
 
 @dataclass(frozen=True)
@@ -13,7 +20,7 @@ class LFIBEntry:
     in_label: int | None
     out_label: int | None
     egress_if: str
-    operation: str  # push | swap | pop
+    operation: "MPLSOperation | str"
 
 
 @dataclass
@@ -37,13 +44,15 @@ class MPLSForwarder:
         if entry is None:
             return None, None, "no_lfib_entry"
 
-        if entry.operation == "push":
+        operation = MPLSOperation(entry.operation)
+
+        if operation == MPLSOperation.PUSH:
             if entry.out_label is None:
                 return None, None, "missing_out_label"
             out = self.push_label(packet, entry.out_label)
             return entry.egress_if, out, None
 
-        if entry.operation == "swap":
+        if operation == MPLSOperation.SWAP:
             if entry.out_label is None:
                 return None, None, "missing_out_label"
             out = packet.clone()
@@ -53,7 +62,7 @@ class MPLSForwarder:
                     break
             return entry.egress_if, out, None
 
-        if entry.operation == "pop":
+        if operation == MPLSOperation.POP:
             out = self.pop_label(packet)
             return entry.egress_if, out, None
 
