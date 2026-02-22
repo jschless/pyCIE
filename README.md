@@ -1,31 +1,29 @@
 # pyCIE
 
-`pyCIE` is a protocol-first networking workbook scaffold.
+`pyCIE` is a networking protocol workbook for software engineers.
 
-The goal is to move from CCNA-level familiarity to CCIE-level protocol intuition by implementing protocol logic in Python and validating behavior with deterministic tests.
+You learn networking by implementing protocol logic in Python, not by memorizing vendor CLI commands.
 
-## What is included
+## Who this is for
 
-- An event-driven network simulator scaffold.
-- Core control-plane data model scaffolding (`RIB`, `FIB`, node/interface/link models).
-- Data-plane model scaffolding for header stacks and encapsulation.
-- Forwarding pipeline scaffolding (L2 VLAN bridge domain, ARP, IPv4, MPLS).
-- Scenario DSL scaffolding for failure/reconvergence labs.
-- Protocol module scaffolds for:
-  - Learning switch
-  - STP (simplified)
-  - OSPF (simplified)
-  - BGP (simplified)
-  - LDP (simplified)
-  - BFD (simplified)
-  - ARP, RSTP, GRE, IPsec, policy, VRF, MPLS
-- Lab instruction sheets in `/labs`.
-- Capability matrix in `/labs/capabilities.json`.
-- A test suite split into:
-  - Contract tests (pass now)
-  - Exercise tests (run during each lab)
+- Software engineers who want deep protocol intuition.
+- Network engineers who want to reason in code.
+- Anyone moving from CCNA-level familiarity toward CCNP/CCIE-level understanding.
 
-## Install
+## What you do in this repo
+
+- Implement protocol state machines and forwarding logic.
+- Run deterministic lab tests.
+- Study failure and reconvergence behavior.
+- Build understanding incrementally from L2 switching to overlays and control-plane internals.
+
+## Why this approach works
+
+- You can inspect every decision point in code.
+- Tests force precise behavior and edge-case handling.
+- Labs are modular: follow the sequence or pick topic tracks.
+
+## Quick start
 
 ```bash
 python -m venv .venv
@@ -33,59 +31,102 @@ source .venv/bin/activate
 pip install -e .[dev]
 ```
 
-If your environment is offline, skip install and run tests directly from source.
-
-## Run tests
-
-Default test run (contract checks only):
+Then use the CLI:
 
 ```bash
-pytest
+pycie quickstart
+pycie labs
+pycie run lab01
 ```
 
-Run a specific lab test set:
+If `pycie` is not on path:
+
+```bash
+python -m pycie labs
+```
+
+## CLI commands
+
+- `pycie labs`: list available labs and README paths
+- `pycie show <labXX>`: show details for one lab
+- `pycie run <labXX>`: run one lab's exercise tests
+- `pycie run all`: run all exercise tests
+- `pycie check`: run contract tests only
+- `pycie guide`: print key docs and recommended commands
+- `pycie quickstart`: print first-run setup steps
+
+## Lab model
+
+Each lab provides:
+
+1. Standards/RFC links.
+2. Target files and methods.
+3. Step-by-step implementation guidance.
+4. Advanced extension ideas.
+5. Deterministic exercise tests.
+
+Run one lab manually:
 
 ```bash
 pytest -m "lab01 and exercise"
 ```
 
-Run all exercise tests:
+Run all exercise labs:
 
 ```bash
 pytest -m exercise
 ```
 
-## Generate Student Scaffold
+## Learning paths
 
-Generate a student TODO version of the codebase:
+### Foundational path
+
+- `lab01` through `lab16`
+
+### Router internals path
+
+- `lab23` -> `lab38` -> `lab30` -> `lab39`
+
+### Services/security path
+
+- `lab31` -> `lab33` -> `lab32` -> `lab37`
+
+### Overlay/multicast path
+
+- `lab34` -> `lab35` -> `lab36`
+
+## Repository structure
+
+- `src/pycie/sim`: simulation primitives
+- `src/pycie/core`: device lifecycle and RIB/FIB models
+- `src/pycie/model`: packet/header/capability models
+- `src/pycie/forwarding`: L2/L3/MPLS/encapsulation behaviors
+- `src/pycie/protocols`: protocol modules by lab
+- `tests/contract`: baseline contract checks
+- `tests/labs`: lab behavior tests
+- `labs`: lab instructions and capability matrix
+- `docs`: architecture, standards, roadmap, TODO
+
+## Student workflow
+
+### Branch-based workflow (recommended)
+
+1. Create a branch from `main`.
+2. Implement TODO logic in source files.
+3. Run `pycie run <labXX>` repeatedly.
+
+### Scaffold workflow
 
 ```bash
 python tools/make_student_scaffold.py --input src/pycie --output dist/student/src/pycie --labs all
-```
-
-Generate a subset (example: lab07 and lab08 only):
-
-```bash
-python tools/make_student_scaffold.py --input src/pycie --output dist/student/src/pycie --labs lab07,lab08
-```
-
-Run tests against generated student scaffold code:
-
-```bash
-PYCIE_SRC=dist/student/src pytest -m "lab07 and exercise"
+PYCIE_SRC=dist/student/src pytest -m "lab01 and exercise"
 ```
 
 ## Documentation
 
-- Architecture: [`/docs/architecture.md`](docs/architecture.md)
-- Standards and RFC references: [`/docs/standards.md`](docs/standards.md)
-- Full lab sequence and expectations: [`/labs/INSTRUCTIONS.md`](labs/INSTRUCTIONS.md)
-- Capability matrix: [`/labs/capabilities.json`](labs/capabilities.json)
-- Future lab roadmap: [`/docs/roadmap.md`](docs/roadmap.md)
-
-## Design philosophy
-
-- Keep scope narrow but behavior realistic.
-- Implement protocol state machines and tie-breakers clearly.
-- Test convergence, failures, and deterministic outcomes.
-- Prioritize control-plane correctness over packet/wire fidelity.
+- Usage guide: [`docs/usage.md`](docs/usage.md)
+- Full lab instructions: [`labs/INSTRUCTIONS.md`](labs/INSTRUCTIONS.md)
+- Architecture: [`docs/architecture.md`](docs/architecture.md)
+- Standards references: [`docs/standards.md`](docs/standards.md)
+- Roadmap/backlog: [`docs/roadmap.md`](docs/roadmap.md)
+- Product TODO: [`docs/TODO.md`](docs/TODO.md)

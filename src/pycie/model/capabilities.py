@@ -27,6 +27,18 @@ class CapabilitySet:
     mpls_forwarding: bool = False
     policy: bool = False
     telemetry: bool = False
+    isis: bool = False
+    route_selection: bool = False
+    redistribution: bool = False
+    acl: bool = False
+    aaa: bool = False
+    dhcp: bool = False
+    multicast: bool = False
+    vxlan: bool = False
+    evpn: bool = False
+    macsec: bool = False
+    control_plane_db: bool = False
+    rib_fib_pipeline: bool = False
 
     def require(self, feature: str) -> None:
         """Raise if a feature is unavailable in this capability set."""

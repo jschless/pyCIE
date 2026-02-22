@@ -81,5 +81,54 @@
     "mpls_forwarding": true,
     "policy": true,
     "telemetry": true
+  },
+  "lab23": {
+    "isis": true,
+    "ipv4_forwarding": true
+  },
+  "lab30": {
+    "route_selection": true,
+    "redistribution": true,
+    "ipv4_forwarding": true
+  },
+  "lab31": {
+    "acl": true,
+    "ipv4_forwarding": true
+  },
+  "lab32": {
+    "aaa": true
+  },
+  "lab33": {
+    "dhcp": true,
+    "ipv4_forwarding": true
+  },
+  "lab34": {
+    "multicast": true,
+    "ipv4_forwarding": true
+  },
+  "lab35": {
+    "vxlan": true,
+    "vlan": true,
+    "switching": true
+  },
+  "lab36": {
+    "evpn": true,
+    "vxlan": true,
+    "bgp": true
+  },
+  "lab37": {
+    "macsec": true,
+    "switching": true
+  },
+  "lab38": {
+    "control_plane_db": true,
+    "ospf": true,
+    "bgp": true,
+    "ldp": true
+  },
+  "lab39": {
+    "rib_fib_pipeline": true,
+    "ipv4_forwarding": true,
+    "mpls_forwarding": true
   }
 }

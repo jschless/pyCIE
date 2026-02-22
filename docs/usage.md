@@ -1,0 +1,159 @@
+# Usage Guide
+
+This guide is for software engineers using pyCIE to build networking protocol intuition through code.
+
+## What pyCIE is
+
+pyCIE is a protocol-first networking workbook.
+
+- You learn by implementing protocol behavior in Python.
+- You validate your understanding with deterministic tests.
+- You can study labs in sequence or run a focused topic lab.
+
+## Setup
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .[dev]
+```
+
+If the `pycie` command is not on your path, use module mode:
+
+```bash
+python -m pycie <subcommand>
+```
+
+## CLI Quickstart
+
+Show first-run steps:
+
+```bash
+pycie quickstart
+```
+
+List labs:
+
+```bash
+pycie labs
+```
+
+Show one lab:
+
+```bash
+pycie show lab01
+```
+
+Run one lab:
+
+```bash
+pycie run lab01
+```
+
+Run all exercise labs:
+
+```bash
+pycie run all
+```
+
+Run contract checks only:
+
+```bash
+pycie check
+```
+
+Show doc map:
+
+```bash
+pycie guide
+```
+
+## Recommended learning paths
+
+### Core protocol sequence
+
+1. `lab01` through `lab16`
+2. Then advanced labs (`lab23`, `lab30+`)
+
+### Router decision internals
+
+1. `lab23_isis`
+2. `lab38_control_plane_databases`
+3. `lab30_route_selection_redistribution`
+4. `lab39_rib_to_fib_pipeline`
+
+### Services/security track
+
+1. `lab31_acl_filtering`
+2. `lab33_dhcp_services`
+3. `lab32_aaa_access_control`
+4. `lab37_macsec_link_security`
+
+### Overlay/multicast track
+
+1. `lab34_multicast_foundations`
+2. `lab35_vxlan_overlay_data_plane`
+3. `lab36_evpn_control_plane`
+
+## Student workflow options
+
+### Option A: Branch-based workflow (recommended)
+
+1. Create a branch from `main`.
+2. Implement TODO logic directly in source modules.
+3. Run `pycie run <labXX>` until green.
+
+### Option B: Scaffold workflow
+
+Generate student TODO scaffold:
+
+```bash
+python tools/make_student_scaffold.py --input src/pycie --output dist/student/src/pycie --labs all
+```
+
+Run tests against scaffold path:
+
+```bash
+PYCIE_SRC=dist/student/src pytest -m "lab01 and exercise"
+```
+
+## Repo map
+
+- `src/pycie/sim`: event-driven simulation primitives
+- `src/pycie/core`: device, RIB/FIB core models
+- `src/pycie/model`: headers, packet stack, capabilities
+- `src/pycie/forwarding`: L2/L3/MPLS/encapsulation behaviors
+- `src/pycie/protocols`: per-lab protocol logic
+- `tests/contract`: baseline shape/sanity tests
+- `tests/labs`: lab behavior tests
+- `labs`: lab READMEs and capability matrix
+
+## Troubleshooting
+
+### Unknown lab ID in CLI
+
+Use `pycie labs` to list valid IDs and exact names.
+
+### No tests discovered
+
+Remember exercise tests are marker-filtered. Use `pycie run <labXX>` or:
+
+```bash
+pytest -m "labXX and exercise"
+```
+
+### CLI command missing
+
+Use module mode:
+
+```bash
+python -m pycie labs
+```
+
+## Next docs
+
+- Architecture: `docs/architecture.md`
+- Standards: `docs/standards.md`
+- Lab instructions: `labs/INSTRUCTIONS.md`
+- Roadmap: `docs/roadmap.md`
+- Product TODO: `docs/TODO.md`

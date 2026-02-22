@@ -18,6 +18,9 @@ dev = [
   "ruff>=0.6",
 ]
 
+[project.scripts]
+pycie = "pycie.cli:main"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
@@ -46,4 +49,15 @@ markers = [
   "lab14: Lab 14 VRF and route leaking",
   "lab15: Lab 15 MPLS forwarding",
   "lab16: Lab 16 capstone multi-protocol convergence",
+  "lab23: Lab 23 IS-IS L1/L2 foundations",
+  "lab30: Lab 30 route selection and redistribution",
+  "lab31: Lab 31 ACL filtering",
+  "lab32: Lab 32 AAA access control",
+  "lab33: Lab 33 DHCP services",
+  "lab34: Lab 34 multicast foundations",
+  "lab35: Lab 35 VXLAN overlay data plane",
+  "lab36: Lab 36 EVPN control plane",
+  "lab37: Lab 37 MACsec link security",
+  "lab38: Lab 38 control-plane databases",
+  "lab39: Lab 39 RIB-to-FIB pipeline",
 ]

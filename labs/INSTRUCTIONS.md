@@ -59,19 +59,28 @@ for if_name, interface in self.device.interfaces.items():
 Run base contract tests:
 
 ```bash
+pycie check
 pytest
 ```
 
 Run a single lab:
 
 ```bash
+pycie run lab01
 pytest -m "lab01 and exercise"
 ```
 
 Run all lab tests:
 
 ```bash
+pycie run all
 pytest -m exercise
+```
+
+Run any extended lab (example: lab33):
+
+```bash
+pytest -m "lab33 and exercise"
 ```
 
 Run a scenario-driven capstone suite (when implemented):
@@ -110,6 +119,12 @@ PYCIE_SRC=dist/student/src pytest -m "lab01 and exercise"
 14. Lab 14: 5-8 days
 15. Lab 15: 4-7 days
 16. Lab 16: 1-2 weeks
+
+For post-capstone labs (`lab23`, `lab30+`), use the same pacing model:
+
+1. Start with 3-5 days for service/security labs (`lab31`-`lab33`, `lab37`).
+2. Use 4-7 days for control-plane labs (`lab23`, `lab34`, `lab36`, `lab38`).
+3. Use 5-8 days for pipeline/overlay labs (`lab30`, `lab35`, `lab39`).
 
 ## Completion standard
 

@@ -76,6 +76,43 @@ Note: IEEE standards pages are linked for normative reference. The workbook uses
 - BGP/MPLS IP VPNs (VRF concepts): RFC 4364
   - https://datatracker.ietf.org/doc/html/rfc4364
 
+## Enterprise services and security
+
+- DHCPv4: RFC 2131
+  - https://datatracker.ietf.org/doc/html/rfc2131
+- DHCP options: RFC 2132
+  - https://datatracker.ietf.org/doc/html/rfc2132
+- DHCP relay option context: RFC 3046
+  - https://datatracker.ietf.org/doc/html/rfc3046
+- RADIUS: RFC 2865
+  - https://datatracker.ietf.org/doc/html/rfc2865
+- TACACS+: RFC 8907
+  - https://datatracker.ietf.org/doc/html/rfc8907
+
+## Multicast and overlays
+
+- IGMPv2: RFC 2236
+  - https://datatracker.ietf.org/doc/html/rfc2236
+- IGMPv3: RFC 3376
+  - https://datatracker.ietf.org/doc/html/rfc3376
+- PIM-SM: RFC 7761
+  - https://datatracker.ietf.org/doc/html/rfc7761
+- VXLAN: RFC 7348
+  - https://datatracker.ietf.org/doc/html/rfc7348
+- EVPN: RFC 7432
+  - https://datatracker.ietf.org/doc/html/rfc7432
+- EVPN overlays: RFC 8365
+  - https://datatracker.ietf.org/doc/html/rfc8365
+
+## IS-IS and link security
+
+- IS-IS for IP: RFC 1195
+  - https://datatracker.ietf.org/doc/html/rfc1195
+- IS-IS protocol extensions registry context: RFC 5308
+  - https://datatracker.ietf.org/doc/html/rfc5308
+- MACsec standard index: IEEE 802.1AE
+  - https://standards.ieee.org/ieee/802.1AE/7118/
+
 ## Routing behavior references
 
 - Requirements for IPv4 routers: RFC 1812 (legacy but still useful)

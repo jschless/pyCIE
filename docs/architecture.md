@@ -55,7 +55,7 @@ This gives repeatable convergence/failure behavior and allows strict unit testin
 
 - Contract tests should always pass.
 - Exercise tests are marked `exercise` and represent student tasks.
-- Each lab is mapped to markers `lab01` through `lab16`.
+- Each lab is mapped to a marker (`lab01`, `lab02`, ..., advanced lab IDs).
 
 ## Scaffold conventions
 

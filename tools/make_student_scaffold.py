@@ -144,6 +144,78 @@ TARGETS: tuple[Target, ...] = (
     Target("lab16", "scenario/runner.py", "ScenarioRunner.run", "Implement scenario execution loop and expectation checks"),
     Target("lab16", "scenario/runner.py", "ScenarioRunner.apply_action", "Implement scenario action dispatch"),
     Target("lab16", "scenario/runner.py", "ScenarioRunner.evaluate_expectation", "Implement expectation evaluation logic"),
+    # lab23
+    Target("lab23", "protocols/isis.py", "ISISProcess.on_start", "Originate initial IS-IS LSPs"),
+    Target("lab23", "protocols/isis.py", "ISISProcess.on_frame", "Process inbound IS-IS LSP payloads"),
+    Target("lab23", "protocols/isis.py", "ISISProcess.originate_lsp", "Build local LSP with deterministic link ordering"),
+    Target("lab23", "protocols/isis.py", "ISISProcess.install_lsp", "Implement IS-IS LSP sequence comparison"),
+    Target("lab23", "protocols/isis.py", "ISISProcess.run_spf", "Implement per-level IS-IS SPF"),
+    Target("lab23", "protocols/isis.py", "ISISProcess.compute_routing_table", "Build level-aware routing table output"),
+    # lab30
+    Target("lab30", "protocols/route_selection.py", "RouteSelectionEngine.install_route", "Implement route candidate install/replace semantics"),
+    Target("lab30", "protocols/route_selection.py", "RouteSelectionEngine.withdraw_route", "Implement route candidate withdrawal"),
+    Target("lab30", "protocols/route_selection.py", "RouteSelectionEngine.best_route", "Implement LPM and tie-break route selection"),
+    Target("lab30", "protocols/route_selection.py", "RouteSelectionEngine.explain", "Implement route-decision explain trace"),
+    Target("lab30", "protocols/route_selection.py", "RouteSelectionEngine.redistribute", "Implement redistribution with loop-prevention tags"),
+    # lab31
+    Target("lab31", "protocols/acl.py", "ACLRule.matches", "Implement ACL packet-to-rule matching"),
+    Target("lab31", "protocols/acl.py", "ACL.add_rule", "Implement ACL sequence insertion/replacement"),
+    Target("lab31", "protocols/acl.py", "ACL.remove_rule", "Implement ACL rule removal"),
+    Target("lab31", "protocols/acl.py", "ACL.evaluate", "Implement first-match ACL evaluation with implicit deny"),
+    # lab32
+    Target("lab32", "protocols/aaa.py", "AAAService.login", "Implement AAA login flow with backend/local fallback"),
+    Target("lab32", "protocols/aaa.py", "AAAService.authorize", "Implement role-based command authorization"),
+    Target("lab32", "protocols/aaa.py", "AAAService.logout", "Implement AAA session teardown"),
+    Target("lab32", "protocols/aaa.py", "AAAService._authenticate_backend", "Implement backend AAA decision handling"),
+    # lab33
+    Target("lab33", "protocols/dhcp.py", "DHCPServer.handle_discover", "Implement deterministic DHCP offer allocation"),
+    Target("lab33", "protocols/dhcp.py", "DHCPServer.handle_request", "Implement DHCP request ACK/NAK logic"),
+    Target("lab33", "protocols/dhcp.py", "DHCPServer.renew", "Implement DHCP lease renewal"),
+    Target("lab33", "protocols/dhcp.py", "DHCPServer.release", "Implement DHCP lease release"),
+    Target("lab33", "protocols/dhcp.py", "DHCPServer.age_leases", "Implement DHCP lease aging"),
+    Target("lab33", "protocols/dhcp.py", "DHCPServer.relay", "Implement DHCP relay helper behavior"),
+    # lab34
+    Target("lab34", "protocols/multicast.py", "MulticastProcess.join_group", "Implement multicast group join behavior"),
+    Target("lab34", "protocols/multicast.py", "MulticastProcess.leave_group", "Implement multicast group leave behavior"),
+    Target("lab34", "protocols/multicast.py", "MulticastProcess.install_rpf_route", "Implement RPF route installation"),
+    Target("lab34", "protocols/multicast.py", "MulticastProcess.expected_rpf_interface", "Implement longest-prefix RPF lookup"),
+    Target("lab34", "protocols/multicast.py", "MulticastProcess.compute_egress_interfaces", "Implement multicast egress interface selection"),
+    Target("lab34", "protocols/multicast.py", "MulticastProcess.process_data", "Implement (S,G) forwarding-state update"),
+    # lab35
+    Target("lab35", "protocols/vxlan.py", "VXLANBridge.learn_local", "Implement local VXLAN MAC learning"),
+    Target("lab35", "protocols/vxlan.py", "VXLANBridge.learn_remote", "Implement remote VXLAN MAC learning"),
+    Target("lab35", "protocols/vxlan.py", "VXLANBridge.lookup_egress", "Implement VNI-aware VXLAN forwarding lookup"),
+    Target("lab35", "protocols/vxlan.py", "VXLANBridge.encapsulate", "Implement VXLAN encapsulation"),
+    Target("lab35", "protocols/vxlan.py", "VXLANBridge.decapsulate", "Implement VXLAN decapsulation"),
+    # lab36
+    Target("lab36", "protocols/evpn.py", "EVPNControlPlane.import_route", "Implement EVPN route import policy"),
+    Target("lab36", "protocols/evpn.py", "EVPNControlPlane.withdraw_route", "Implement EVPN route withdrawal"),
+    Target("lab36", "protocols/evpn.py", "EVPNControlPlane.recompute", "Implement EVPN best-path recomputation"),
+    Target("lab36", "protocols/evpn.py", "EVPNControlPlane.resolve_mac", "Implement EVPN MAC next-hop resolution"),
+    Target("lab36", "protocols/evpn.py", "EVPNControlPlane.resolve_prefix", "Implement EVPN IP-prefix next-hop resolution"),
+    # lab37
+    Target("lab37", "protocols/macsec.py", "MACsecProcess.configure_interface", "Implement per-interface MACsec policy installation"),
+    Target("lab37", "protocols/macsec.py", "MACsecProcess.install_secure_association", "Implement MACsec secure association installation"),
+    Target("lab37", "protocols/macsec.py", "MACsecProcess.validate_ingress", "Implement ingress MACsec policy and replay checks"),
+    Target("lab37", "protocols/macsec.py", "MACsecProcess.protect_egress", "Implement egress MACsec protection behavior"),
+    # lab38
+    Target("lab38", "protocols/control_plane_db.py", "OSPFLSDB.install", "Implement OSPF LSDB install with sequence checks"),
+    Target("lab38", "protocols/control_plane_db.py", "OSPFLSDB.withdraw", "Implement OSPF LSDB withdrawal"),
+    Target("lab38", "protocols/control_plane_db.py", "BGPDatabase.install_path", "Implement BGP Adj-RIB-In installation"),
+    Target("lab38", "protocols/control_plane_db.py", "BGPDatabase.withdraw_path", "Implement BGP Adj-RIB-In withdrawal"),
+    Target("lab38", "protocols/control_plane_db.py", "BGPDatabase.best_path", "Implement BGP best-path selection"),
+    Target("lab38", "protocols/control_plane_db.py", "BGPDatabase.recompute_loc_rib", "Implement BGP Loc-RIB recomputation"),
+    Target("lab38", "protocols/control_plane_db.py", "LDPDatabase.install_binding", "Implement LDP binding installation"),
+    Target("lab38", "protocols/control_plane_db.py", "LDPDatabase.withdraw_binding", "Implement LDP binding withdrawal"),
+    Target("lab38", "protocols/control_plane_db.py", "LDPDatabase.best_binding", "Implement best LDP binding selection"),
+    # lab39
+    Target("lab39", "protocols/rib_fib_pipeline.py", "RIBFIBPipeline.install_route", "Implement route install in RIB->FIB pipeline"),
+    Target("lab39", "protocols/rib_fib_pipeline.py", "RIBFIBPipeline.withdraw_route", "Implement route withdrawal in RIB->FIB pipeline"),
+    Target("lab39", "protocols/rib_fib_pipeline.py", "RIBFIBPipeline.best_route_for_prefix", "Implement per-prefix best-route selection"),
+    Target("lab39", "protocols/rib_fib_pipeline.py", "RIBFIBPipeline.resolve_next_hop", "Implement recursive next-hop resolution"),
+    Target("lab39", "protocols/rib_fib_pipeline.py", "RIBFIBPipeline.recompute", "Implement RIB-to-FIB recompute pipeline"),
+    Target("lab39", "protocols/rib_fib_pipeline.py", "RIBFIBPipeline.lookup", "Implement FIB longest-prefix lookup"),
+    Target("lab39", "protocols/rib_fib_pipeline.py", "RIBFIBPipeline.explain", "Implement route-programming explain output"),
 )
 
 
