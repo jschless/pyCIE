@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pycie"
+version = "0.1.0"
+description = "Protocol-first networking labs from CCNA to CCIE depth"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "pyCIE" }]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+  "pytest-cov>=5.0",
+  "ruff>=0.6",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-ra -q -m \"not exercise\""
+markers = [
+  "exercise: student lab tests to run during lab work",
+  "lab01: Lab 01 learning switch",
+  "lab02: Lab 02 spanning tree",
+  "lab03: Lab 03 OSPF",
+  "lab04: Lab 04 BGP",
+  "lab05: Lab 05 LDP",
+  "lab06: Lab 06 BFD",
+]
