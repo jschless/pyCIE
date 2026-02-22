@@ -53,6 +53,20 @@ Run all exercise tests:
 pytest -m exercise
 ```
 
+## Generate Student Scaffold
+
+Generate a student TODO version of the codebase:
+
+```bash
+python tools/make_student_scaffold.py --input src/pycie --output dist/student/src/pycie --labs all
+```
+
+Generate a subset (example: lab07 and lab08 only):
+
+```bash
+python tools/make_student_scaffold.py --input src/pycie --output dist/student/src/pycie --labs lab07,lab08
+```
+
 ## Documentation
 
 - Architecture: [`/docs/architecture.md`](docs/architecture.md)

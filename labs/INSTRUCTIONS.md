@@ -49,6 +49,12 @@ Run a scenario-driven capstone suite (when implemented):
 pytest -m "lab16 and exercise"
 ```
 
+Generate a student scaffold from reference code:
+
+```bash
+python tools/make_student_scaffold.py --input src/pycie --output dist/student/src/pycie --labs all
+```
+
 ## Suggested pacing
 
 1. Lab 01: 3-5 days
