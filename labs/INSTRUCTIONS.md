@@ -4,6 +4,8 @@ This workbook is designed as a progression from foundational L2 forwarding to mu
 
 The first six labs focus on core control-plane behavior. Labs 07+ extend into full data-plane modeling, encapsulation, policy, VRF, and capstone failure scenarios.
 
+Use `/docs/roadmap.md` as the active backlog for realism upgrades and new labs (`lab17+`).
+
 ## How labs are structured
 
 Each lab has:
