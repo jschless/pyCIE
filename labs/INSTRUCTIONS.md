@@ -2,6 +2,8 @@
 
 This workbook is designed as a progression from foundational L2 forwarding to multi-protocol convergence and failure detection.
 
+The first six labs focus on core control-plane behavior. Labs 07+ extend into full data-plane modeling, encapsulation, policy, VRF, and capstone failure scenarios.
+
 ## How labs are structured
 
 Each lab has:
@@ -15,9 +17,11 @@ Each lab has:
 
 1. Read the lab's standards notes.
 2. Open the corresponding module under `src/pycie/protocols`.
-3. Implement only the `TODO(student)` methods for that lab.
-4. Run lab tests repeatedly.
-5. Write short notes explaining state transitions and tie-breakers.
+3. If the lab includes data-plane work, also implement modules under `src/pycie/forwarding` and `src/pycie/model`.
+4. Implement only the `TODO(student)` methods for that lab.
+5. Confirm feature scope in `labs/capabilities.json`.
+6. Run lab tests repeatedly.
+7. Write short notes explaining state transitions and tie-breakers.
 
 ## Commands
 
@@ -39,6 +43,12 @@ Run all lab tests:
 pytest -m exercise
 ```
 
+Run a scenario-driven capstone suite (when implemented):
+
+```bash
+pytest -m "lab16 and exercise"
+```
+
 ## Suggested pacing
 
 1. Lab 01: 3-5 days
@@ -47,6 +57,16 @@ pytest -m exercise
 4. Lab 04: 1-2 weeks
 5. Lab 05: 4-6 days
 6. Lab 06: 3-5 days
+7. Lab 07: 3-5 days
+8. Lab 08: 3-4 days
+9. Lab 09: 4-6 days
+10. Lab 10: 4-6 days
+11. Lab 11: 3-5 days
+12. Lab 12: 5-8 days
+13. Lab 13: 4-6 days
+14. Lab 14: 5-8 days
+15. Lab 15: 4-7 days
+16. Lab 16: 1-2 weeks
 
 ## Completion standard
 

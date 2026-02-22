@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from pycie.core.todo import student_todo
 from pycie.sim.network import Frame
 
 from .base import ProtocolBase
@@ -47,28 +46,62 @@ class BFDProcess(ProtocolBase):
 
     def on_start(self) -> None:
         """Initialize timers for configured sessions."""
-        student_todo("Start BFD periodic control transmission")
+        # Timer scheduling intentionally omitted in scaffold baseline.
 
     def on_frame(self, ingress_if: str, frame: Frame) -> None:
         """Parse and process BFD control packets."""
-        student_todo("Handle inbound BFD control packet")
+        if isinstance(frame.payload, BFDControl):
+            self.receive_control(ingress_if, frame.payload)
 
     def open_session(self, peer_id: str) -> BFDSession:
         """Create a local BFD session object for a peer."""
-        student_todo("Create BFD session with local discriminator")
+        if peer_id in self.sessions:
+            return self.sessions[peer_id]
+
+        discriminator = self.discriminator_seed + len(self.sessions) + 1
+        session = BFDSession(peer_id=peer_id, local_discriminator=discriminator)
+        self.sessions[peer_id] = session
+        return session
 
     def receive_control(self, peer_id: str, packet: BFDControl) -> None:
         """Apply session state transitions on inbound control packet."""
-        student_todo("Implement BFD state machine transition logic")
+        session = self.open_session(peer_id)
+        if packet.your_discriminator != session.local_discriminator:
+            return
+
+        session.remote_discriminator = packet.my_discriminator
+        session.last_rx_ms = self.now_ms if hasattr(self, "device") else 0.0
+        session.required_min_rx_ms = packet.required_min_rx_ms
+        session.detect_mult = packet.detect_mult
+
+        if packet.state == "UP":
+            session.state = "UP" if session.state in {"INIT", "UP"} else "INIT"
+        elif packet.state == "INIT":
+            session.state = "INIT"
 
     def transmit_control(self, peer_id: str) -> BFDControl:
         """Build an outbound BFD control packet for a peer session."""
-        student_todo("Build outbound BFD control packet fields")
+        session = self.open_session(peer_id)
+        return BFDControl(
+            your_discriminator=session.remote_discriminator,
+            my_discriminator=session.local_discriminator,
+            state=session.state,
+            desired_min_tx_ms=session.desired_min_tx_ms,
+            required_min_rx_ms=session.required_min_rx_ms,
+            detect_mult=session.detect_mult,
+        )
 
     def detect_time_ms(self, peer_id: str) -> int:
         """Compute detection time for the peer session."""
-        student_todo("Compute BFD detection timer")
+        session = self.sessions[peer_id]
+        return session.required_min_rx_ms * session.detect_mult
 
     def check_timeouts(self) -> list[str]:
         """Return peer IDs whose sessions should be declared down."""
-        student_todo("Implement timeout detection based on last receive time")
+        now_ms = self.now_ms if hasattr(self, "device") else 0.0
+        expired: list[str] = []
+        for peer_id, session in sorted(self.sessions.items()):
+            if now_ms - session.last_rx_ms >= self.detect_time_ms(peer_id):
+                session.state = "DOWN"
+                expired.append(peer_id)
+        return expired

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from pycie.core.todo import student_todo
 from pycie.sim.network import Frame
 
 from .base import ProtocolBase
@@ -56,24 +55,77 @@ class STPProcess(ProtocolBase):
 
     def on_start(self) -> None:
         """Initialize local state and transmit initial BPDUs."""
-        student_todo("Send initial BPDUs and bootstrap STP state")
+        self.root_id = self.bridge_id
+        self.root_cost = 0
+        self.root_port = None
+        self.recompute_port_states()
 
     def on_frame(self, ingress_if: str, frame: Frame) -> None:
         """Process incoming BPDU frames only."""
-        student_todo("Parse and process inbound BPDUs")
+        if isinstance(frame.payload, BPDU):
+            self.process_bpdu(ingress_if, frame.payload)
 
     def build_bpdu(self, egress_if: str) -> BPDU:
         """Build the BPDU announced on a given port."""
-        student_todo("Build outbound BPDU based on current root view")
+        port = self.ports[egress_if]
+        return BPDU(
+            root_id=self.root_id,
+            root_path_cost=self.root_cost,
+            bridge_id=self.bridge_id,
+            port_id=port.port_id,
+        )
 
     def process_bpdu(self, ingress_if: str, bpdu: BPDU) -> None:
         """Update root selection and port roles from an inbound BPDU."""
-        student_todo("Implement BPDU comparison and root/port selection")
+        if ingress_if not in self.ports:
+            return
+
+        ingress_port = self.ports[ingress_if]
+        candidate = (
+            bpdu.root_id,
+            bpdu.root_path_cost + ingress_port.path_cost,
+            bpdu.bridge_id,
+            bpdu.port_id,
+        )
+
+        if self.root_port is None:
+            local_port_id = 0
+        else:
+            local_port_id = self.ports[self.root_port].port_id
+
+        local = (
+            self.root_id,
+            self.root_cost,
+            self.bridge_id,
+            local_port_id,
+        )
+
+        if candidate < local:
+            self.root_id = bpdu.root_id
+            self.root_cost = bpdu.root_path_cost + ingress_port.path_cost
+            self.root_port = ingress_if
+            self.recompute_port_states()
 
     def recompute_port_states(self) -> None:
         """Set each port role/state after root calculation."""
-        student_todo("Recompute DESIGNATED/ROOT/BLOCKING decisions")
+        if self.root_id == self.bridge_id or self.root_port is None:
+            self.root_port = None
+            for port in self.ports.values():
+                port.role = "DESIGNATED"
+                port.state = "FORWARDING"
+            return
+
+        for if_name, port in self.ports.items():
+            if if_name == self.root_port:
+                port.role = "ROOT"
+                port.state = "FORWARDING"
+            else:
+                port.role = "ALTERNATE"
+                port.state = "BLOCKING"
 
     def should_forward_data(self, if_name: str) -> bool:
         """Return True if the port is in a forwarding state."""
-        student_todo("Implement STP forwarding-state check")
+        port = self.ports.get(if_name)
+        if port is None:
+            return False
+        return port.state == "FORWARDING"

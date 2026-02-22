@@ -13,6 +13,15 @@ The labs use simplified protocol behavior while grounding design in real standar
 
 Note: IEEE standards pages are linked for normative reference. The workbook uses simplified behavior models.
 
+## Ethernet, IPv4, and ARP fundamentals
+
+- Ethernet II encapsulation guidance: RFC 894
+  - https://datatracker.ietf.org/doc/html/rfc894
+- IPv4 core: RFC 791
+  - https://datatracker.ietf.org/doc/html/rfc791
+- ARP: RFC 826
+  - https://datatracker.ietf.org/doc/html/rfc826
+
 ## OSPF
 
 - OSPFv2: RFC 2328
@@ -35,6 +44,8 @@ Note: IEEE standards pages are linked for normative reference. The workbook uses
   - https://datatracker.ietf.org/doc/html/rfc3031
 - LDP specification: RFC 5036
   - https://datatracker.ietf.org/doc/html/rfc5036
+- MPLS label stack encoding: RFC 3032
+  - https://datatracker.ietf.org/doc/html/rfc3032
 
 ## BFD
 
@@ -44,6 +55,26 @@ Note: IEEE standards pages are linked for normative reference. The workbook uses
   - https://datatracker.ietf.org/doc/html/rfc5881
 - BFD multipoint considerations (optional): RFC 8562
   - https://datatracker.ietf.org/doc/html/rfc8562
+
+## Tunnels and secure encapsulation
+
+- GRE: RFC 2784
+  - https://datatracker.ietf.org/doc/html/rfc2784
+- GRE key/sequence extensions: RFC 2890
+  - https://datatracker.ietf.org/doc/html/rfc2890
+- IP-in-IP encapsulation: RFC 2003
+  - https://datatracker.ietf.org/doc/html/rfc2003
+- IPsec architecture: RFC 4301
+  - https://datatracker.ietf.org/doc/html/rfc4301
+- ESP: RFC 4303
+  - https://datatracker.ietf.org/doc/html/rfc4303
+
+## Policy and VPN references
+
+- BGP communities: RFC 1997
+  - https://datatracker.ietf.org/doc/html/rfc1997
+- BGP/MPLS IP VPNs (VRF concepts): RFC 4364
+  - https://datatracker.ietf.org/doc/html/rfc4364
 
 ## Routing behavior references
 

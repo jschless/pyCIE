@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from pycie.core.todo import student_todo
 from pycie.sim.network import Frame
 
 from .base import ProtocolBase
@@ -46,24 +45,45 @@ class LDPProcess(ProtocolBase):
 
     def on_start(self) -> None:
         """Send discovery hellos and advertise initial local bindings."""
-        student_todo("Start LDP discovery and mapping advertisement")
+        # Discovery signaling is out of scope for the scaffold baseline.
 
     def on_frame(self, ingress_if: str, frame: Frame) -> None:
         """Handle hello and label mapping messages."""
-        student_todo("Parse and process inbound LDP messages")
+        payload = frame.payload
+        if isinstance(payload, LDPHello):
+            self.neighbors[payload.router_id] = LDPNeighbor(router_id=payload.router_id, state="UP")
+        if isinstance(payload, LabelMapping):
+            self.process_label_mapping(ingress_if, payload)
 
     def allocate_local_label(self, prefix: str) -> int:
         """Allocate (or return existing) local label for prefix."""
-        student_todo("Implement local label allocation policy")
+        if prefix in self.lib:
+            return self.lib[prefix]
+        label = self.label_counter
+        self.label_counter += 1
+        self.lib[prefix] = label
+        return label
 
     def advertise_bindings(self) -> list[LabelMapping]:
         """Build current outbound label mapping set."""
-        student_todo("Build outbound label mapping advertisements")
+        return [
+            LabelMapping(prefix=prefix, label=label, next_hop=self.router_id)
+            for prefix, label in sorted(self.lib.items())
+        ]
 
     def process_label_mapping(self, peer_id: str, mapping: LabelMapping) -> None:
         """Store peer binding and trigger LFIB update."""
-        student_todo("Install remote label binding and update forwarding view")
+        self.remote_bindings.setdefault(peer_id, {})[mapping.prefix] = mapping.label
 
     def build_lfib(self) -> dict[str, tuple[int, int | None]]:
         """Return prefix -> (out_label, in_label_or_none) mapping."""
-        student_todo("Compute LFIB from local and remote bindings")
+        lfib: dict[str, tuple[int, int | None]] = {}
+        for prefix, local_label in sorted(self.lib.items()):
+            out_label = local_label
+            for neighbor in sorted(self.remote_bindings):
+                remote = self.remote_bindings[neighbor]
+                if prefix in remote:
+                    out_label = remote[prefix]
+                    break
+            lfib[prefix] = (out_label, local_label)
+        return lfib

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from pycie.core.todo import student_todo
 from pycie.sim.network import Frame
 
 from .base import ProtocolBase
@@ -32,20 +31,44 @@ class LearningSwitch(ProtocolBase):
 
     def on_frame(self, ingress_if: str, frame: Frame) -> None:
         """Learn source MAC and forward/flood based on destination lookup."""
-        student_todo("Implement learning switch forwarding pipeline")
+        self.age_mac_table()
+        self.learn_source_mac(ingress_if, frame.src_mac)
+        egress_interfaces = self.lookup_egress_interfaces(ingress_if, frame.dst_mac)
+        for egress_if in egress_interfaces:
+            self.device.send_frame(egress_if, frame)
 
     def learn_source_mac(self, ingress_if: str, src_mac: str) -> None:
         """Install or refresh a source-MAC entry in the local table."""
-        student_todo("Implement source MAC learning")
+        self.mac_table[src_mac] = MacEntry(
+            mac=src_mac,
+            interface=ingress_if,
+            learned_at_ms=self.now_ms,
+        )
 
     def lookup_egress_interfaces(self, ingress_if: str, dst_mac: str) -> list[str]:
         """Return output interfaces for destination MAC (unicast or flood set)."""
-        student_todo("Implement MAC lookup and flood behavior")
+        if self.should_flood(dst_mac):
+            return sorted(if_name for if_name in self.device.interfaces if if_name != ingress_if)
+
+        entry = self.mac_table.get(dst_mac)
+        if entry is None:
+            return sorted(if_name for if_name in self.device.interfaces if if_name != ingress_if)
+        if entry.interface == ingress_if:
+            return []
+        return [entry.interface]
 
     def age_mac_table(self) -> None:
         """Expire stale MAC entries based on current simulation time."""
-        student_todo("Implement MAC aging")
+        expired = [
+            mac
+            for mac, entry in self.mac_table.items()
+            if self.now_ms - entry.learned_at_ms >= self.mac_aging_ms
+        ]
+        for mac in expired:
+            del self.mac_table[mac]
 
     def should_flood(self, dst_mac: str) -> bool:
         """Return True for unknown unicast and broadcast destinations."""
-        student_todo("Implement broadcast/unknown flood decision")
+        if dst_mac.lower() == "ff:ff:ff:ff:ff:ff":
+            return True
+        return dst_mac not in self.mac_table

@@ -8,6 +8,9 @@ The goal is to move from CCNA-level familiarity to CCIE-level protocol intuition
 
 - An event-driven network simulator scaffold.
 - Core control-plane data model scaffolding (`RIB`, `FIB`, node/interface/link models).
+- Data-plane model scaffolding for header stacks and encapsulation.
+- Forwarding pipeline scaffolding (L2 VLAN bridge domain, ARP, IPv4, MPLS).
+- Scenario DSL scaffolding for failure/reconvergence labs.
 - Protocol module scaffolds for:
   - Learning switch
   - STP (simplified)
@@ -15,7 +18,9 @@ The goal is to move from CCNA-level familiarity to CCIE-level protocol intuition
   - BGP (simplified)
   - LDP (simplified)
   - BFD (simplified)
+  - ARP, RSTP, GRE, IPsec, policy, VRF, MPLS
 - Lab instruction sheets in `/labs`.
+- Capability matrix in `/labs/capabilities.json`.
 - A test suite split into:
   - Contract tests (pass now)
   - Exercise tests (run during each lab)
@@ -39,7 +44,7 @@ pytest
 Run a specific lab test set:
 
 ```bash
-pytest -m lab01 -m exercise
+pytest -m "lab01 and exercise"
 ```
 
 Run all exercise tests:
@@ -53,6 +58,8 @@ pytest -m exercise
 - Architecture: [`/docs/architecture.md`](docs/architecture.md)
 - Standards and RFC references: [`/docs/standards.md`](docs/standards.md)
 - Full lab sequence and expectations: [`/labs/INSTRUCTIONS.md`](labs/INSTRUCTIONS.md)
+- Capability matrix: [`/labs/capabilities.json`](labs/capabilities.json)
+- Future lab roadmap: [`/docs/roadmap.md`](docs/roadmap.md)
 
 ## Design philosophy
 

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from pycie.core.todo import student_todo
 from pycie.sim.network import Frame
 
 from .base import ProtocolBase
@@ -55,32 +54,89 @@ class BGPProcess(ProtocolBase):
 
     def on_start(self) -> None:
         """Attempt peer sessions and schedule keepalives."""
-        student_todo("Start BGP sessions for configured peers")
+        for peer_id in sorted(self.peers):
+            self.establish_session(peer_id)
 
     def on_frame(self, ingress_if: str, frame: Frame) -> None:
         """Dispatch OPEN/KEEPALIVE/UPDATE handling."""
-        student_todo("Parse and process BGP message payloads")
+        payload = frame.payload
+        if isinstance(payload, BGPOpen):
+            self.process_open(ingress_if, payload)
+        if isinstance(payload, BGPUpdate):
+            self.process_update(ingress_if, payload)
 
     def establish_session(self, peer_id: str) -> None:
         """Drive peer FSM through OPEN/ESTABLISHED."""
-        student_todo("Implement BGP peer finite state machine")
+        if peer_id not in self.peers:
+            return
+        self.peers[peer_id].state = "ESTABLISHED"
 
     def process_open(self, peer_id: str, open_msg: BGPOpen) -> None:
         """Validate and process OPEN from peer."""
-        student_todo("Implement OPEN validation and peer negotiation")
+        peer = self.peers.get(peer_id)
+        if peer is None:
+            return
+        if open_msg.asn != peer.peer_as:
+            peer.state = "IDLE"
+            return
+        peer.state = "ESTABLISHED"
 
     def process_update(self, peer_id: str, update: BGPUpdate) -> None:
         """Install update into Adj-RIB-In and trigger best-path."""
-        student_todo("Implement Adj-RIB-In update handling")
+        bucket = self.adj_rib_in.setdefault(peer_id, [])
+        bucket = [candidate for candidate in bucket if candidate.prefix != update.prefix]
+        bucket.append(update)
+        self.adj_rib_in[peer_id] = bucket
+        self.recompute_loc_rib()
 
     def best_path(self, prefix: str) -> BGPUpdate | None:
         """Return best path for prefix according to simplified tie-breakers."""
-        student_todo("Implement deterministic BGP best-path algorithm")
+        candidates: list[BGPUpdate] = []
+        for updates in self.adj_rib_in.values():
+            for update in updates:
+                if update.prefix == prefix:
+                    candidates.append(update)
+
+        if not candidates:
+            return None
+
+        ordered = sorted(
+            candidates,
+            key=lambda update: (
+                -update.local_pref,
+                len(update.as_path),
+                update.med,
+                update.next_hop,
+                update.origin,
+                update.as_path,
+            ),
+        )
+        return ordered[0]
 
     def recompute_loc_rib(self) -> None:
         """Rebuild Loc-RIB from Adj-RIB-In."""
-        student_todo("Implement Loc-RIB recomputation")
+        prefixes = {
+            update.prefix
+            for updates in self.adj_rib_in.values()
+            for update in updates
+        }
+
+        self.loc_rib = {}
+        for prefix in sorted(prefixes):
+            best = self.best_path(prefix)
+            if best is not None:
+                self.loc_rib[prefix] = best
 
     def export_updates_for_peer(self, peer_id: str) -> list[BGPUpdate]:
         """Return outbound updates after export policy."""
-        student_todo("Implement export policy and outbound update build")
+        peer = self.peers.get(peer_id)
+        if peer is None:
+            return []
+
+        out: list[BGPUpdate] = []
+        for prefix in sorted(self.loc_rib):
+            update = self.loc_rib[prefix]
+            if peer.peer_as in update.as_path:
+                continue
+            out.append(update)
+        return out

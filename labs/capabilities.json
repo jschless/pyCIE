@@ -1,0 +1,85 @@
+{
+  "lab01": {
+    "switching": true
+  },
+  "lab02": {
+    "switching": true,
+    "stp": true
+  },
+  "lab03": {
+    "ipv4_forwarding": true,
+    "ospf": true
+  },
+  "lab04": {
+    "ipv4_forwarding": true,
+    "bgp": true,
+    "policy": true
+  },
+  "lab05": {
+    "ipv4_forwarding": true,
+    "ldp": true,
+    "mpls_forwarding": true
+  },
+  "lab06": {
+    "ipv4_forwarding": true,
+    "ospf": true,
+    "bgp": true,
+    "bfd": true
+  },
+  "lab07": {
+    "ipv4_forwarding": true,
+    "arp": true
+  },
+  "lab08": {
+    "ipv4_forwarding": true,
+    "arp": true
+  },
+  "lab09": {
+    "switching": true,
+    "vlan": true
+  },
+  "lab10": {
+    "switching": true,
+    "vlan": true,
+    "rstp": true
+  },
+  "lab11": {
+    "ipv4_forwarding": true,
+    "gre": true
+  },
+  "lab12": {
+    "ipv4_forwarding": true,
+    "ipsec": true,
+    "policy": true
+  },
+  "lab13": {
+    "bgp": true,
+    "policy": true
+  },
+  "lab14": {
+    "ipv4_forwarding": true,
+    "bgp": true,
+    "vrf": true,
+    "policy": true
+  },
+  "lab15": {
+    "ipv4_forwarding": true,
+    "ldp": true,
+    "mpls_forwarding": true,
+    "vrf": true
+  },
+  "lab16": {
+    "switching": true,
+    "vlan": true,
+    "ospf": true,
+    "bgp": true,
+    "ldp": true,
+    "bfd": true,
+    "gre": true,
+    "ipsec": true,
+    "vrf": true,
+    "mpls_forwarding": true,
+    "policy": true,
+    "telemetry": true
+  }
+}

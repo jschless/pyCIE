@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import heapq
 from dataclasses import dataclass, field
 
-from pycie.core.todo import student_todo
 from pycie.sim.network import Frame
 
 from .base import ProtocolBase
@@ -53,32 +53,108 @@ class OSPFProcess(ProtocolBase):
 
     def on_start(self) -> None:
         """Start hello timers and originate initial LSA."""
-        student_todo("Initialize OSPF hello and LSA flooding")
+        lsa = self.originate_router_lsa()
+        self.install_lsa(lsa)
 
     def on_frame(self, ingress_if: str, frame: Frame) -> None:
         """Dispatch inbound hello and LSA payloads."""
-        student_todo("Parse and handle OSPF control packets")
+        if isinstance(frame.payload, OSPFHello):
+            self.process_hello(ingress_if, frame.payload)
+        if isinstance(frame.payload, RouterLSA):
+            self.install_lsa(frame.payload)
 
     def send_hello(self) -> None:
         """Send hello packets on all enabled interfaces."""
-        student_todo("Implement periodic OSPF hello transmission")
+        # Intentionally no-op for the scaffold baseline.
 
     def process_hello(self, ingress_if: str, hello: OSPFHello) -> None:
         """Update neighbor state machine on hello reception."""
-        student_todo("Implement OSPF neighbor state transitions")
+        if hello.area_id != self.area_id:
+            return
+
+        neighbor = self.neighbors.get(hello.router_id)
+        if neighbor is None:
+            neighbor = OSPFNeighbor(router_id=hello.router_id)
+            self.neighbors[hello.router_id] = neighbor
+
+        if self.router_id in hello.neighbors:
+            neighbor.state = "FULL"
+        else:
+            neighbor.state = "INIT"
+
+        neighbor.dead_interval_ms = hello.dead_interval_ms
+        neighbor.last_hello_ms = self.now_ms if hasattr(self, "device") else 0.0
 
     def originate_router_lsa(self) -> RouterLSA:
         """Create a self-originated router LSA from local links."""
-        student_todo("Originate local router LSA")
+        current = self.lsdb.get(self.router_id)
+        seq = current.sequence + 1 if current else 1
+
+        links: list[tuple[str, int]] = []
+        if hasattr(self, "device"):
+            for if_name, interface in sorted(self.device.interfaces.items()):
+                # Use a stable pseudo-node identifier for local interfaces in the baseline.
+                links.append((f"{self.router_id}:{if_name}", interface.cost))
+
+        return RouterLSA(
+            advertising_router=self.router_id,
+            lsa_id=self.router_id,
+            sequence=seq,
+            links=tuple(links),
+        )
 
     def install_lsa(self, lsa: RouterLSA) -> bool:
         """Install a newer LSA and return whether LSDB changed."""
-        student_todo("Implement LSA sequence handling and LSDB update")
+        current = self.lsdb.get(lsa.advertising_router)
+        if current is None or lsa.sequence > current.sequence:
+            self.lsdb[lsa.advertising_router] = lsa
+            return True
+        return False
 
     def run_spf(self) -> dict[str, tuple[int, str | None]]:
         """Compute shortest paths and return next-hop view per router ID."""
-        student_todo("Implement Dijkstra SPF over current LSDB graph")
+        if self.router_id not in self.lsdb:
+            return {self.router_id: (0, None)}
+
+        distances: dict[str, int] = {self.router_id: 0}
+        first_hop: dict[str, str | None] = {self.router_id: None}
+        queue: list[tuple[int, str]] = [(0, self.router_id)]
+
+        while queue:
+            cost, node = heapq.heappop(queue)
+            if cost > distances.get(node, 10**9):
+                continue
+
+            lsa = self.lsdb.get(node)
+            if lsa is None:
+                continue
+
+            for neighbor, edge_cost in lsa.links:
+                new_cost = cost + edge_cost
+                known = distances.get(neighbor)
+                candidate_first_hop = neighbor if node == self.router_id else first_hop[node]
+
+                if known is None or new_cost < known:
+                    distances[neighbor] = new_cost
+                    first_hop[neighbor] = candidate_first_hop
+                    heapq.heappush(queue, (new_cost, neighbor))
+                elif new_cost == known:
+                    current_hop = first_hop.get(neighbor)
+                    if current_hop is None or (
+                        candidate_first_hop is not None and candidate_first_hop < current_hop
+                    ):
+                        first_hop[neighbor] = candidate_first_hop
+
+        return {
+            node: (distances[node], first_hop.get(node))
+            for node in sorted(distances)
+        }
 
     def compute_routing_table(self) -> dict[str, str | None]:
         """Build destination -> next-hop map from SPF output."""
-        student_todo("Translate SPF tree into routing entries")
+        spf = self.run_spf()
+        return {
+            destination: next_hop
+            for destination, (_cost, next_hop) in spf.items()
+            if destination != self.router_id
+        }
