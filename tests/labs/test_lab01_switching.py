@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pycie.core.node import Device
 from pycie.protocols.switching import LearningSwitch, MacEntry
-from pycie.sim.network import Interface, NetworkSimulator, Topology
+from pycie.sim.network import Frame, Interface, NetworkSimulator, Topology
 import pytest
 
 pytestmark = [pytest.mark.exercise, pytest.mark.lab01]
@@ -80,3 +80,49 @@ def test_should_flood_for_broadcast_and_unknown_only() -> None:
     assert l2.should_flood("ff:ff:ff:ff:ff:ff")
     assert l2.should_flood("00:11:22:33:44:55")
     assert not l2.should_flood("aa:aa:aa:aa:aa:aa")
+
+
+def test_should_flood_accepts_uppercase_broadcast() -> None:
+    _sim, _dev, l2 = _build_switch()
+    assert l2.should_flood("FF:FF:FF:FF:FF:FF")
+
+
+def test_lookup_flood_excludes_ingress_by_value_not_identity() -> None:
+    _sim, _dev, l2 = _build_switch()
+    ingress_if = bytes(b"eth1").decode()
+    assert ingress_if == "eth1"
+
+    egress = l2.lookup_egress_interfaces(ingress_if, "de:ad:be:ef:00:01")
+    assert egress == ["eth0", "eth2"]
+    assert "eth1" not in egress
+
+
+def test_lookup_unknown_unicast_flood_order_is_deterministic() -> None:
+    _sim, _dev, l2 = _build_switch()
+    egress = l2.lookup_egress_interfaces("eth0", "de:ad:be:ef:00:02")
+    assert egress == ["eth1", "eth2"]
+
+
+def test_on_frame_ages_table_before_forwarding_decision() -> None:
+    sim, dev, l2 = _build_switch()
+    l2.mac_aging_ms = 10
+    l2.mac_table["de:ad:be:ef:00:09"] = MacEntry(
+        mac="de:ad:be:ef:00:09",
+        interface="eth2",
+        learned_at_ms=0,
+    )
+    sim.clock.advance_to(11)
+
+    sent: list[str] = []
+    dev.send_frame = lambda egress_if, _frame: sent.append(egress_if)  # type: ignore[method-assign]
+
+    frame = Frame(
+        src_mac="de:ad:be:ef:00:10",
+        dst_mac="de:ad:be:ef:00:09",
+        ethertype="0x0800",
+        payload=b"x",
+    )
+    l2.on_frame("eth0", frame)
+
+    assert "de:ad:be:ef:00:09" not in l2.mac_table
+    assert sent == ["eth1", "eth2"]
