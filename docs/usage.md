@@ -108,6 +108,8 @@ pycie viz packet --trace traces/lab01.jsonl --packet-id p1 --detail full
 pycie viz topology --trace traces/lab01.jsonl --packet-id p1
 pycie viz sequence --trace traces/lab01.jsonl --packet-id p1 --detail packet
 pycie viz stp --trace traces/lab02.jsonl
+pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01
+pycie scenario run labs/scenarios/lab16_dual_failure.json --report json --report-out dist/reports/lab16.json
 ```
 
 ## Recommended learning paths

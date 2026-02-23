@@ -14,6 +14,8 @@ import sys
 import tempfile
 from typing import Sequence, TypeVar
 
+from pycie.model.capabilities import CapabilityMatrix
+from pycie.scenario import ScenarioRunner, load_scenario, render_scenario_report
 from pycie.telemetry.events import EventType, Layer
 from pycie.telemetry.render import (
     DetailLevel,
@@ -25,6 +27,7 @@ from pycie.telemetry.render import (
     render_topology_snapshot,
 )
 from pycie.telemetry.trace import TRACE_OUT_ENV, load_trace_events
+from pycie.telemetry.webviz import write_web_visualization
 
 EnumType = TypeVar("EnumType", Layer, EventType)
 
@@ -299,6 +302,39 @@ def cmd_check(namespace: argparse.Namespace, repo_root: Path) -> int:
     return run_pytest([], repo_root)
 
 
+def cmd_scenario_run(namespace: argparse.Namespace, repo_root: Path) -> int:
+    """Run one scenario file and optionally write a report."""
+    scenario_path = namespace.scenario_file.expanduser().resolve()
+    scenario = load_scenario(scenario_path)
+    matrix = CapabilityMatrix.from_json(repo_root / "labs" / "capabilities.json")
+    runner = ScenarioRunner(capability_matrix=matrix)
+    result = runner.run(scenario)
+
+    status = "PASS" if result.passed else "FAIL"
+    print(f"Scenario {scenario.name} ({scenario.lab_id}): {status}")
+    print(
+        f"Actions={len(scenario.actions)} Expectations={len(scenario.expectations)} "
+        f"Failures={len(result.failures)}"
+    )
+    if result.failures:
+        print("Failure details:")
+        for failure in result.failures:
+            print(f"  - {failure}")
+
+    if namespace.report is not None:
+        report_body = render_scenario_report(scenario, result, report_format=namespace.report)
+        report_out = namespace.report_out
+        if report_out is None:
+            report_path = scenario_path.with_name(f"{scenario_path.stem}.report.{namespace.report}")
+        else:
+            report_path = report_out.expanduser().resolve()
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        report_path.write_text(report_body, encoding="utf-8")
+        print(f"Report written: {report_path}")
+
+    return 0 if result.passed else 1
+
+
 def cmd_guide(namespace: argparse.Namespace, repo_root: Path) -> int:
     """Print primary docs and recommended command entry points."""
     del namespace
@@ -329,6 +365,8 @@ def cmd_guide(namespace: argparse.Namespace, repo_root: Path) -> int:
     print("  pycie viz topology --trace traces/lab01.jsonl --packet-id p1")
     print("  pycie viz sequence --trace traces/lab01.jsonl --packet-id p1")
     print("  pycie viz stp --trace traces/lab02.jsonl")
+    print("  pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01")
+    print("  pycie scenario run labs/scenarios/lab16_dual_failure.json")
     print("  pycie check")
     return 0
 
@@ -346,6 +384,8 @@ def cmd_quickstart(namespace: argparse.Namespace, repo_root: Path) -> int:
     print("7) pycie run lab01 --trace-out traces/lab01.jsonl")
     print("8) pycie viz replay --trace traces/lab01.jsonl --detail packet")
     print("9) pycie viz topology --trace traces/lab01.jsonl --packet-id p1")
+    print("10) pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01")
+    print("11) pycie scenario run labs/scenarios/lab16_dual_failure.json")
     print()
     print("If pycie command is unavailable, use: python -m pycie <subcommand>")
     return 0
@@ -404,6 +444,18 @@ def cmd_viz_stp(namespace: argparse.Namespace, repo_root: Path) -> int:
     events = load_trace_events(namespace.trace)
     lines = render_stp_summary(events, bridge_id=namespace.bridge_id)
     print("\n".join(lines))
+    return 0
+
+
+def cmd_viz_web(namespace: argparse.Namespace, repo_root: Path) -> int:
+    """Generate local static HTML viewer assets from trace JSONL."""
+    del repo_root
+    trace_path = namespace.trace.expanduser().resolve()
+    output_dir = namespace.out.expanduser().resolve()
+    events = load_trace_events(trace_path)
+    artifacts = write_web_visualization(events, output_dir=output_dir, trace_path=trace_path)
+    print(f"Web viewer generated: {artifacts['index']}")
+    print(f"Open this file in a browser: {artifacts['index']}")
     return 0
 
 
@@ -529,6 +581,22 @@ def build_parser() -> argparse.ArgumentParser:
     p_quickstart = subparsers.add_parser("quickstart", help="Print first-run setup steps")
     p_quickstart.set_defaults(func=cmd_quickstart)
 
+    p_scenario = subparsers.add_parser("scenario", help="Run scenario fixtures and checks")
+    scenario_subparsers = p_scenario.add_subparsers(dest="scenario_command", required=True)
+    p_scenario_run = scenario_subparsers.add_parser("run", help="Run a scenario JSON file")
+    p_scenario_run.add_argument("scenario_file", type=Path, help="Path to scenario JSON file")
+    p_scenario_run.add_argument(
+        "--report",
+        choices=("json", "md"),
+        help="Optional report format to export",
+    )
+    p_scenario_run.add_argument(
+        "--report-out",
+        type=Path,
+        help="Optional report output path (default: alongside scenario file)",
+    )
+    p_scenario_run.set_defaults(func=cmd_scenario_run)
+
     p_viz = subparsers.add_parser("viz", help="Trace replay and packet-path visualization")
     viz_subparsers = p_viz.add_subparsers(dest="viz_command", required=True)
 
@@ -605,6 +673,11 @@ def build_parser() -> argparse.ArgumentParser:
     p_stp.add_argument("--trace", required=True, type=Path, help="Path to JSONL trace file")
     p_stp.add_argument("--bridge-id", help="Optional bridge-id filter (priority:mac)")
     p_stp.set_defaults(func=cmd_viz_stp)
+
+    p_web = viz_subparsers.add_parser("web", help="Generate static HTML trace viewer")
+    p_web.add_argument("--trace", required=True, type=Path, help="Path to JSONL trace file")
+    p_web.add_argument("--out", required=True, type=Path, help="Output directory for web assets")
+    p_web.set_defaults(func=cmd_viz_web)
 
     return parser
 

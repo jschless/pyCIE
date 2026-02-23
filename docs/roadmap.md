@@ -32,7 +32,7 @@ This plan is execution-first and acceptance-driven. If capacity is limited, foll
 
 ### Sprint 0: Roadmap Hygiene (February 23 to March 1, 2026)
 
-Status: `planned`
+Status: `done`
 
 Deliverables:
 
@@ -48,7 +48,7 @@ Acceptance criteria:
 
 ### Sprint 1: Visualization v2 (March 2 to March 22, 2026)
 
-Status: `planned`
+Status: `done`
 
 Deliverables:
 
@@ -71,51 +71,51 @@ Issue-sized backlog (execution order):
 1. `VIZ-01` CLI entrypoint and argument validation
    - Scope: implement `pycie viz web` command plumbing, `--trace`, `--out`, and clear input error messages.
    - Done when: invalid args fail fast, valid args create output directory scaffold.
-   - Status: `planned`
+   - Status: `done`
 2. `VIZ-02` Trace normalization adapter
    - Scope: convert existing trace JSONL/events into a stable viewer schema (`topology`, `events`, `packets`).
    - Done when: adapter emits deterministic JSON for identical traces.
    - Depends on: `VIZ-01`
-   - Status: `planned`
+   - Status: `done`
 3. `VIZ-03` Static viewer shell
    - Scope: add `index.html`, `styles.css`, `viewer.js`, and local asset loader without external network dependencies.
    - Done when: viewer opens directly from filesystem and loads normalized data.
    - Depends on: `VIZ-02`
-   - Status: `planned`
+   - Status: `done`
 4. `VIZ-04` Topology pane
    - Scope: render nodes/links with selected-event highlighting and legend.
    - Done when: selecting events updates highlighted topology state.
    - Depends on: `VIZ-03`
-   - Status: `planned`
+   - Status: `done`
 5. `VIZ-05` Packet decode pane
    - Scope: render RFC-like field/value view for selected packet and protocol layer.
    - Done when: field tree updates on event select and handles missing fields gracefully.
    - Depends on: `VIZ-03`
-   - Status: `planned`
+   - Status: `done`
 6. `VIZ-06` Timeline scrubber
    - Scope: implement scrub/play/pause controls and event index synchronization.
    - Done when: timeline position and selected event stay consistent during manual scrub and playback.
    - Depends on: `VIZ-03`
-   - Status: `planned`
+   - Status: `done`
 7. `VIZ-07` Filter pipeline
    - Scope: add node, layer, and packet-type filters with combined predicate logic.
    - Done when: filtered timeline/event list is deterministic and reversible.
    - Depends on: `VIZ-04`, `VIZ-05`, `VIZ-06`
-   - Status: `planned`
+   - Status: `done`
 8. `VIZ-08` Contract and regression tests
    - Scope: add CLI contract test for artifact generation and one deterministic fixture test for normalized schema.
    - Done when: tests run in CI and fail on schema drift.
    - Depends on: `VIZ-01`, `VIZ-02`, `VIZ-03`
-   - Status: `planned`
+   - Status: `done`
 9. `VIZ-09` Docs quickstart and troubleshooting
    - Scope: document command usage, output structure, common failures, and recovery steps.
    - Done when: README/docs can be followed from clean checkout to working viewer.
    - Depends on: `VIZ-08`
-   - Status: `planned`
+   - Status: `done`
 
 ### Sprint 2: Scenario Engine (March 23 to April 12, 2026)
 
-Status: `planned`
+Status: `done`
 
 Deliverables:
 

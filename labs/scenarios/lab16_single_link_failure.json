@@ -1,0 +1,32 @@
+{
+  "name": "single_link_failure_reconvergence",
+  "lab_id": "lab16",
+  "topology": {
+    "nodes": ["pe1", "pe2", "p1", "ce1", "ce2"],
+    "links": [
+      ["pe1:eth0", "p1:eth0"],
+      ["pe2:eth0", "p1:eth1"],
+      ["ce1:eth0", "pe1:eth1"],
+      ["ce2:eth0", "pe2:eth1"]
+    ]
+  },
+  "actions": [
+    {
+      "at_ms": 750,
+      "action": "fail_link",
+      "params": {"a": "pe1:eth0", "b": "p1:eth0"}
+    }
+  ],
+  "expectations": [
+    {
+      "kind": "event_seen",
+      "selector": "fail_link",
+      "expected": true
+    },
+    {
+      "kind": "convergence_ms_lte",
+      "selector": "fabric",
+      "expected": 1200
+    }
+  ]
+}

@@ -92,6 +92,33 @@ def test_build_parser_accepts_restore_labs_selector() -> None:
     assert namespace.labs == "lab01,lab07"
 
 
+def test_build_parser_accepts_viz_web_arguments() -> None:
+    parser = build_parser()
+    namespace = parser.parse_args(["viz", "web", "--trace", "trace.jsonl", "--out", "dist/viz/lab01"])
+
+    assert namespace.trace == Path("trace.jsonl")
+    assert namespace.out == Path("dist/viz/lab01")
+
+
+def test_build_parser_accepts_scenario_run_arguments() -> None:
+    parser = build_parser()
+    namespace = parser.parse_args(
+        [
+            "scenario",
+            "run",
+            "labs/scenarios/lab16_dual_failure.json",
+            "--report",
+            "json",
+            "--report-out",
+            "dist/reports/lab16.json",
+        ]
+    )
+
+    assert namespace.scenario_file == Path("labs/scenarios/lab16_dual_failure.json")
+    assert namespace.report == "json"
+    assert namespace.report_out == Path("dist/reports/lab16.json")
+
+
 def test_cli_main_scaffold_invokes_generator(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],

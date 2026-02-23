@@ -42,6 +42,8 @@ pycie run lab01 --trace-out traces/lab01.jsonl
 pycie viz replay --trace traces/lab01.jsonl --detail packet
 pycie viz topology --trace traces/lab01.jsonl --packet-id p1
 pycie viz sequence --trace traces/lab01.jsonl --packet-id p1 --detail packet
+pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01
+pycie scenario run labs/scenarios/lab16_dual_failure.json
 ```
 
 If `pycie` is not on path:
@@ -69,6 +71,8 @@ python -m pycie labs
 - `pycie viz topology --trace <file>`: topology snapshot + packet position
 - `pycie viz sequence --trace <file>`: grouped playback over simulation time
 - `pycie viz stp --trace <file>`: STP election/role summary
+- `pycie viz web --trace <file> --out <dir>`: generate an offline HTML viewer
+- `pycie scenario run <scenario-file>`: run a scenario fixture with pass/fail exit status
 
 ## Lab model
 
@@ -91,6 +95,8 @@ Capture trace while running one lab:
 ```bash
 pycie run lab01 --trace-out traces/lab01.jsonl
 pycie viz replay --trace traces/lab01.jsonl
+pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01
+pycie scenario run labs/scenarios/lab16_dual_failure.json --report md --report-out dist/reports/lab16.md
 ```
 
 Run all exercise labs:

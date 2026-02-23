@@ -70,11 +70,15 @@ class ScenarioRunner:
         expectation_kind = ExpectationKind(kind)
 
         if expectation_kind == ExpectationKind.EVENT_SEEN:
-            seen = any(event.get("action") == selector for event in self._events)
+            seen = any(str(event.get("action")) == selector for event in self._events)
             ok = seen == bool(expected)
             if ok:
                 return True, None
-            return False, f"expected event_seen={expected} for {selector!r}, got {seen}"
+            return (
+                False,
+                "expectation failed: kind=event_seen "
+                f"selector={selector!r} expected={expected} actual={seen}",
+            )
 
         if expectation_kind == ExpectationKind.CONVERGENCE_MS_LTE:
             # Baseline convergence model assumes immediate logical convergence.
@@ -82,7 +86,11 @@ class ScenarioRunner:
             ok = convergence_ms <= int(expected)
             if ok:
                 return True, None
-            return False, f"convergence {convergence_ms}ms exceeds {expected}ms"
+            return (
+                False,
+                "expectation failed: kind=convergence_ms_lte "
+                f"selector={selector!r} expected_lte={expected} actual={convergence_ms}",
+            )
 
         if expectation_kind == ExpectationKind.ROUTE_PRESENT:
             # Placeholder route check hook for future simulator integration.
@@ -90,6 +98,10 @@ class ScenarioRunner:
             ok = present == bool(expected)
             if ok:
                 return True, None
-            return False, f"route presence for {selector!r} expected {expected}, got {present}"
+            return (
+                False,
+                "expectation failed: kind=route_present "
+                f"selector={selector!r} expected={expected} actual={present}",
+            )
 
-        return False, f"unsupported expectation kind {expectation_kind!r}"
+        return False, f"unsupported expectation kind {expectation_kind!r} selector={selector!r}"

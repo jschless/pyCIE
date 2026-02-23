@@ -57,6 +57,27 @@ pycie viz stp --trace traces/lab02.jsonl
 pycie viz stp --trace traces/lab02.jsonl --bridge-id 32768:00:00:00:00:00:01
 ```
 
+## Web viewer (offline static HTML)
+
+Generate a browser viewer from an existing trace:
+
+```bash
+pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01
+```
+
+Then open:
+
+```bash
+dist/viz/lab01/index.html
+```
+
+The web viewer includes:
+
+- topology pane with active-node and active-link highlighting
+- timeline pane with event selection, scrubber, and play/pause playback
+- packet decode pane with RFC-style field/value table and packet-tree rendering
+- filters for node, layer, and packet-id
+
 ## Event schema
 
 Every event is one JSON object with fields:
@@ -98,3 +119,13 @@ Understand where a packet is in the topology:
 - Visualization is additive; it does not change lab semantics.
 - No plaintext keys or cryptographic material are logged.
 - If a protocol path is malformed, drop/failure context is logged with `FRAME_DROP` and `drop_reason`.
+
+## Troubleshooting
+
+1. `pycie viz web` succeeds but page looks empty
+   - Confirm `data.js` exists in the output directory next to `index.html`.
+   - Re-run command with a known trace: `pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01`.
+2. No links appear in topology pane
+   - Link discovery depends on `FRAME_ENQUEUE` events with `src_node/src_if/dst_node/dst_if`.
+3. Packet decode pane lacks packet fields
+   - Some events are control-path only and may not include `packet_summary` or `packet_tree`.
