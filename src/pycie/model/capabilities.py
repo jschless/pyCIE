@@ -39,6 +39,8 @@ class CapabilitySet:
     macsec: bool = False
     control_plane_db: bool = False
     rib_fib_pipeline: bool = False
+    bgp_fsm_transport: bool = False
+    ospf_multi_area: bool = False
 
     def require(self, feature: str) -> None:
         """Raise if a feature is unavailable in this capability set."""

@@ -49,6 +49,8 @@ markers = [
   "lab14: Lab 14 VRF and route leaking",
   "lab15: Lab 15 MPLS forwarding",
   "lab16: Lab 16 capstone multi-protocol convergence",
+  "lab17: Lab 17 BGP FSM transport lifecycle",
+  "lab18: Lab 18 OSPF multi-area ABR behavior",
   "lab23: Lab 23 IS-IS L1/L2 foundations",
   "lab30: Lab 30 route selection and redistribution",
   "lab31: Lab 31 ACL filtering",

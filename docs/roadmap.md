@@ -133,7 +133,7 @@ Acceptance criteria:
 
 ### Sprint 3: Protocol Depth A (April 13 to May 3, 2026)
 
-Status: `planned`
+Status: `done`
 
 Deliverables:
 

@@ -5,6 +5,7 @@ from .acl import ACL
 from .arp import ARPProcess
 from .base import ProtocolBase
 from .bfd import BFDProcess
+from .bgp_fsm_transport import BGPFSMState, BGPTransportProcess, BGPTransportSession
 from .bgp import BGPProcess
 from .control_plane_db import BGPDatabase, LDPDatabase, OSPFLSDB
 from .dhcp import DHCPServer
@@ -17,6 +18,7 @@ from .macsec import MACsecProcess
 from .mpls import MPLSProcess
 from .multicast import MulticastProcess
 from .ospf import OSPFProcess
+from .ospf_multi_area import OSPFMultiAreaProcess
 from .policy import PolicyProcess
 from .rib_fib_pipeline import RIBFIBPipeline
 from .rstp import RSTPProcess
@@ -32,7 +34,10 @@ __all__ = [
     "ARPProcess",
     "BGPDatabase",
     "BFDProcess",
+    "BGPFSMState",
     "BGPProcess",
+    "BGPTransportProcess",
+    "BGPTransportSession",
     "DHCPServer",
     "EVPNControlPlane",
     "GRETunnelProcess",
@@ -45,6 +50,7 @@ __all__ = [
     "MPLSProcess",
     "MulticastProcess",
     "OSPFProcess",
+    "OSPFMultiAreaProcess",
     "OSPFLSDB",
     "PolicyProcess",
     "ProtocolBase",

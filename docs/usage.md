@@ -116,15 +116,17 @@ pycie scenario run labs/scenarios/lab16_dual_failure.json --report json --report
 
 ### Core protocol sequence
 
-1. `lab01` through `lab16`
+1. `lab01` through `lab18`
 2. Then advanced labs (`lab23`, `lab30+`)
 
 ### Router decision internals
 
-1. `lab23_isis`
-2. `lab38_control_plane_databases`
-3. `lab30_route_selection_redistribution`
-4. `lab39_rib_to_fib_pipeline`
+1. `lab17_bgp_fsm_transport`
+2. `lab18_ospf_multi_area`
+3. `lab23_isis`
+4. `lab38_control_plane_databases`
+5. `lab30_route_selection_redistribution`
+6. `lab39_rib_to_fib_pipeline`
 
 ### Services/security track
 

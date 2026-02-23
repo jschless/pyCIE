@@ -82,6 +82,15 @@
     "policy": true,
     "telemetry": true
   },
+  "lab17": {
+    "bgp": true,
+    "bgp_fsm_transport": true
+  },
+  "lab18": {
+    "ospf": true,
+    "ospf_multi_area": true,
+    "ipv4_forwarding": true
+  },
   "lab23": {
     "isis": true,
     "ipv4_forwarding": true
