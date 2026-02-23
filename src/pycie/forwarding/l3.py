@@ -8,6 +8,9 @@ from ipaddress import ip_address, ip_network
 
 from pycie.model.headers import IPv4Header
 from pycie.model.packet import PacketStack
+from pycie.telemetry.events import EventType, Layer
+from pycie.telemetry.packet import ensure_packet_id
+from pycie.telemetry.trace import emit_from_env
 
 
 class L3RouteType(StrEnum):
@@ -33,6 +36,7 @@ class IPv4Forwarder:
     """Longest-prefix-match IPv4 forwarding behavior."""
 
     routes: list[L3Route] = field(default_factory=list)
+    trace_node: str = "l3-forwarder"
 
     def install_route(self, route: L3Route) -> None:
         """Install a route candidate in forwarding view."""
@@ -70,7 +74,25 @@ class IPv4Forwarder:
             for route in self.routes
             if dst in ip_network(route.prefix, strict=False)
         ]
+        self._emit_trace(
+            event_type=EventType.ROUTE_LOOKUP,
+            details={
+                "dst_ip": dst_ip,
+                "candidate_count": len(candidates),
+            },
+        )
         if not candidates:
+            self._emit_trace(
+                event_type=EventType.ROUTE_SELECT,
+                details={
+                    "dst_ip": dst_ip,
+                    "selected_prefix": None,
+                    "next_hop": None,
+                    "ad": None,
+                    "metric": None,
+                    "reason": "no_route",
+                },
+            )
             return None
 
         ordered = sorted(
@@ -84,32 +106,106 @@ class IPv4Forwarder:
                 route.route_type,
             ),
         )
-        return ordered[0]
+        selected = ordered[0]
+        self._emit_trace(
+            event_type=EventType.ROUTE_SELECT,
+            details={
+                "dst_ip": dst_ip,
+                "selected_prefix": selected.prefix,
+                "next_hop": selected.next_hop,
+                "ad": selected.admin_distance,
+                "metric": selected.metric,
+                "reason": "lpm_ad_metric_next_hop_interface_type",
+            },
+        )
+        return selected
 
     def forward(self, packet: PacketStack) -> tuple[str | None, PacketStack | None, str | None]:
         """Return (egress_if, forwarded_packet, drop_reason)."""
+        packet_id = ensure_packet_id(packet)
         ip_idx = next(
             (idx for idx, header in enumerate(packet.headers) if isinstance(header, IPv4Header)),
             None,
         )
         if ip_idx is None:
+            self._emit_trace(
+                event_type=EventType.FIB_DROP,
+                packet_id=packet_id,
+                details={"drop_reason": "no_ipv4_header"},
+            )
             return None, None, "no_ipv4_header"
 
         ip_header = packet.headers[ip_idx]
         if ip_header.ttl <= 1:
+            self._emit_trace(
+                event_type=EventType.FIB_DROP,
+                packet_id=packet_id,
+                details={
+                    "dst_ip": ip_header.dst_ip,
+                    "drop_reason": "ttl_expired",
+                },
+            )
             return None, None, "ttl_expired"
 
         route = self.lookup(ip_header.dst_ip)
         if route is None:
+            self._emit_trace(
+                event_type=EventType.FIB_DROP,
+                packet_id=packet_id,
+                details={
+                    "dst_ip": ip_header.dst_ip,
+                    "drop_reason": "no_route",
+                },
+            )
             return None, None, "no_route"
         if route.outgoing_interface is None:
+            self._emit_trace(
+                event_type=EventType.FIB_DROP,
+                packet_id=packet_id,
+                details={
+                    "dst_ip": ip_header.dst_ip,
+                    "drop_reason": "no_egress_interface",
+                    "selected_prefix": route.prefix,
+                    "next_hop": route.next_hop,
+                    "ad": route.admin_distance,
+                    "metric": route.metric,
+                },
+            )
             return None, None, "no_egress_interface"
 
         forwarded = packet.clone()
         forwarded.headers[ip_idx] = replace(ip_header, ttl=ip_header.ttl - 1)
+        self._emit_trace(
+            event_type=EventType.FIB_FORWARD,
+            packet_id=packet_id,
+            details={
+                "dst_ip": ip_header.dst_ip,
+                "egress_if": route.outgoing_interface,
+                "selected_prefix": route.prefix,
+                "next_hop": route.next_hop,
+                "ad": route.admin_distance,
+                "metric": route.metric,
+            },
+        )
         return route.outgoing_interface, forwarded, None
 
     @staticmethod
     def prefix_length(prefix: str) -> int:
         """Helper to expose parsed prefix length."""
         return ip_network(prefix, strict=False).prefixlen
+
+    def _emit_trace(
+        self,
+        *,
+        event_type: EventType,
+        details: dict[str, object],
+        packet_id: str | None = None,
+    ) -> None:
+        emit_from_env(
+            sim_time_ms=0,
+            node=self.trace_node,
+            layer=Layer.L3,
+            event_type=event_type,
+            packet_id=packet_id,
+            details=details,
+        )

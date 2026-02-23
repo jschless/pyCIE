@@ -17,6 +17,30 @@ Implement longest-prefix matching, tie-breakers, TTL handling, and drop reason c
   - `IPv4Forwarder.lookup`
   - `IPv4Forwarder.forward`
 
+## Visualization
+
+Capture trace while running this lab:
+
+```bash
+pycie run lab07 --trace-out traces/lab07.jsonl
+```
+
+Replay route decisions:
+
+```bash
+pycie viz replay --trace traces/lab07.jsonl --event ROUTE_LOOKUP --event ROUTE_SELECT --event FIB_FORWARD --event FIB_DROP
+```
+
+Expected event patterns:
+
+- Successful forwarding: `ROUTE_LOOKUP` -> `ROUTE_SELECT` -> `FIB_FORWARD`.
+- Drop path: `ROUTE_LOOKUP` -> `ROUTE_SELECT` (reason `no_route`) -> `FIB_DROP`.
+
+Advanced exercises:
+
+- Create overlapping prefixes and explain why selected prefix/AD/metric fields changed.
+- Compare TTL-expired versus no-route drop reasons.
+
 ## Simplifications
 
 - IPv4 unicast only.

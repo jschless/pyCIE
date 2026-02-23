@@ -6,6 +6,11 @@ from dataclasses import dataclass, field
 import random
 from typing import Any, Callable
 
+from pycie.telemetry.pdu import frame_trace_details
+from pycie.telemetry.events import EventType, Layer
+from pycie.telemetry.packet import ensure_packet_id
+from pycie.telemetry.trace import NoOpTraceSink, TraceRecorder, TraceSink, recorder_from_env
+
 from .clock import SimClock
 from .events import EventQueue, TimerHandle
 
@@ -130,10 +135,15 @@ class NetworkSimulator:
     clock: SimClock = field(default_factory=SimClock)
     events: EventQueue = field(default_factory=EventQueue)
     random_seed: int = 7
+    trace_sink: TraceSink | None = None
 
     def __post_init__(self) -> None:
         self._rng = random.Random(self.random_seed)
         self._receivers: dict[NodeId, ReceiveHandler] = {}
+        if self.trace_sink is not None:
+            self._trace_recorder = TraceRecorder(self.trace_sink)
+        else:
+            self._trace_recorder = recorder_from_env() or TraceRecorder(NoOpTraceSink())
 
     def register_receiver(self, node_id: NodeId, handler: ReceiveHandler) -> None:
         if node_id not in self.topology.nodes:
@@ -174,28 +184,120 @@ class NetworkSimulator:
         """Queue delivery of a frame over a connected link."""
         src_endpoint = (from_node, egress_if)
         link = self.topology.get_link(src_endpoint)
+        packet_id = ensure_packet_id(frame)
+        base_details = self._frame_details(frame)
+        base_details.update(
+            {
+                "src_node": from_node,
+                "src_if": egress_if,
+            }
+        )
         if link is None:
+            self.emit_trace(
+                node=from_node,
+                layer=Layer.SIM,
+                event_type=EventType.FRAME_DROP,
+                egress_if=egress_if,
+                packet_id=packet_id,
+                details={**base_details, "drop_reason": "no_link"},
+            )
             return
         if not link.admin_up:
+            self.emit_trace(
+                node=from_node,
+                layer=Layer.SIM,
+                event_type=EventType.FRAME_DROP,
+                egress_if=egress_if,
+                packet_id=packet_id,
+                details={**base_details, "drop_reason": "link_down"},
+            )
             return
 
         src_intf = self.topology.get_interface(src_endpoint)
         if not src_intf.admin_up:
+            self.emit_trace(
+                node=from_node,
+                layer=Layer.SIM,
+                event_type=EventType.FRAME_DROP,
+                egress_if=egress_if,
+                packet_id=packet_id,
+                details={**base_details, "drop_reason": "src_interface_down"},
+            )
             return
 
         if self._rng.random() < link.loss_prob:
+            self.emit_trace(
+                node=from_node,
+                layer=Layer.SIM,
+                event_type=EventType.FRAME_DROP,
+                egress_if=egress_if,
+                packet_id=packet_id,
+                details={**base_details, "drop_reason": "loss_prob"},
+            )
             return
 
         dst_endpoint = link.other(src_endpoint)
         dst_intf = self.topology.get_interface(dst_endpoint)
         if not dst_intf.admin_up:
+            self.emit_trace(
+                node=from_node,
+                layer=Layer.SIM,
+                event_type=EventType.FRAME_DROP,
+                egress_if=egress_if,
+                packet_id=packet_id,
+                details={
+                    **base_details,
+                    "dst_node": dst_endpoint[0],
+                    "dst_if": dst_endpoint[1],
+                    "drop_reason": "dst_interface_down",
+                },
+            )
             return
+
+        self.emit_trace(
+            node=from_node,
+            layer=Layer.SIM,
+            event_type=EventType.FRAME_ENQUEUE,
+            egress_if=egress_if,
+            packet_id=packet_id,
+            details={
+                **base_details,
+                "dst_node": dst_endpoint[0],
+                "dst_if": dst_endpoint[1],
+                "latency_ms": link.latency_ms,
+            },
+        )
 
         def deliver() -> None:
             node_id, if_name = dst_endpoint
             receiver = self._receivers.get(node_id)
             if receiver is None:
+                self.emit_trace(
+                    node=node_id,
+                    layer=Layer.SIM,
+                    event_type=EventType.FRAME_DROP,
+                    ingress_if=if_name,
+                    packet_id=packet_id,
+                    details={
+                        **base_details,
+                        "src_node": from_node,
+                        "src_if": egress_if,
+                        "drop_reason": "receiver_unregistered",
+                    },
+                )
                 return
+            self.emit_trace(
+                node=node_id,
+                layer=Layer.SIM,
+                event_type=EventType.FRAME_DELIVER,
+                ingress_if=if_name,
+                packet_id=packet_id,
+                details={
+                    **base_details,
+                    "src_node": from_node,
+                    "src_if": egress_if,
+                },
+            )
             receiver(node_id, if_name, frame)
 
         self.schedule_in(link.latency_ms, deliver)
@@ -205,3 +307,30 @@ class NetworkSimulator:
 
     def recover_link(self, a: Endpoint, b: Endpoint) -> None:
         self.topology.set_link_admin_state(a, b, up=True)
+
+    def emit_trace(
+        self,
+        *,
+        node: str,
+        layer: Layer | str,
+        event_type: EventType | str,
+        ingress_if: str | None = None,
+        egress_if: str | None = None,
+        packet_id: str | None = None,
+        details: dict[str, Any] | None = None,
+    ) -> None:
+        """Emit one simulation-scoped trace event."""
+        self._trace_recorder.emit(
+            sim_time_ms=self.clock.now_ms,
+            node=node,
+            layer=layer,
+            event_type=event_type,
+            ingress_if=ingress_if,
+            egress_if=egress_if,
+            packet_id=packet_id,
+            details=details or {},
+        )
+
+    @staticmethod
+    def _frame_details(frame: Frame) -> dict[str, Any]:
+        return frame_trace_details(frame)

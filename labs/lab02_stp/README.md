@@ -90,6 +90,37 @@ pytest tests/labs/test_lab02_stp.py -k bpdu -q
 - Letting root port remain set when local bridge should be root.
 - Returning forwarding for blocked/alternate ports in `should_forward_data`.
 
+## Visualization
+
+Capture trace while running this lab:
+
+```bash
+pycie run lab02 --trace-out traces/lab02.jsonl
+```
+
+View STP election timeline:
+
+```bash
+pycie viz stp --trace traces/lab02.jsonl
+```
+
+Inspect raw STP event stream:
+
+```bash
+pycie viz replay --trace traces/lab02.jsonl --event STP_BPDU_RX --event STP_ROOT_CHANGE --event STP_PORT_ROLE_CHANGE
+```
+
+Expected event patterns:
+
+- Superior BPDU: `STP_BPDU_RX` followed by `STP_ROOT_CHANGE`.
+- Port recalculation: one or more `STP_PORT_ROLE_CHANGE` events.
+- Local BPDU generation: `STP_BPDU_TX` when `build_bpdu` is called.
+
+Advanced exercises:
+
+- Recreate tie-break scenarios and verify deterministic root-port transitions in trace order.
+- Filter by bridge ID to isolate one bridge perspective in a multi-bridge run.
+
 ## Simplifications
 
 - Classic STP-like ordering; no full RSTP proposal/agreement handshake.

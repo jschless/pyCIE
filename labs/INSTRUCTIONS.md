@@ -70,6 +70,20 @@ pycie run lab01
 pytest -m "lab01 and exercise"
 ```
 
+Run a lab with trace capture:
+
+```bash
+pycie run lab01 --trace-out traces/lab01.jsonl
+```
+
+Replay and inspect trace output:
+
+```bash
+pycie viz replay --trace traces/lab01.jsonl
+pycie viz packet --trace traces/lab01.jsonl --packet-id p1
+pycie viz stp --trace traces/lab02.jsonl
+```
+
 Run all lab tests:
 
 ```bash

@@ -34,6 +34,7 @@ class GRETunnelProcess(ProtocolBase):
 
     def encapsulate(self, tunnel: GRETunnel, payload: PacketStack) -> PacketStack:
         """Return payload wrapped in GRE over IPv4."""
+        self._pipeline.trace_node = self.node_id if hasattr(self, "device") else self.name
         self._known_tunnels[(tunnel.source_ip, tunnel.destination_ip, tunnel.key)] = tunnel.tunnel_id
         return self._pipeline.encapsulate(
             payload,
@@ -47,6 +48,7 @@ class GRETunnelProcess(ProtocolBase):
 
     def decapsulate(self, packet: PacketStack) -> tuple[str | None, PacketStack | None]:
         """Return (tunnel_id, inner_packet) when GRE packet matches tunnel."""
+        self._pipeline.trace_node = self.node_id if hasattr(self, "device") else self.name
         if len(packet.headers) < 2:
             return None, None
 

@@ -8,6 +8,8 @@ from ipaddress import ip_address, ip_network
 
 from pycie.model.headers import ESPHeader, IPv4Header
 from pycie.model.packet import PacketStack
+from pycie.telemetry.events import EventType, Layer
+from pycie.telemetry.packet import ensure_packet_id
 
 from .base import ProtocolBase
 
@@ -62,8 +64,15 @@ class IPsecProcess(ProtocolBase):
 
     def outbound(self, packet: PacketStack) -> tuple["IPSecPolicyAction | str", PacketStack | None]:
         """Return (action, packet_or_none) after SPD/SAD outbound processing."""
+        packet_id = ensure_packet_id(packet)
         ip_header = next((h for h in packet.headers if isinstance(h, IPv4Header)), None)
         if ip_header is None:
+            self.emit_trace(
+                layer=Layer.CRYPTO,
+                event_type=EventType.FRAME_DROP,
+                packet_id=packet_id,
+                details={"drop_reason": "no_ipv4_header"},
+            )
             return IPSecPolicyAction.DROP, None
 
         policy = self._match_policy(ip_header.src_ip, ip_header.dst_ip)
@@ -77,19 +86,58 @@ class IPsecProcess(ProtocolBase):
             return IPSecPolicyAction.BYPASS, packet.clone()
 
         if policy.sa_spi is None:
+            self.emit_trace(
+                layer=Layer.CRYPTO,
+                event_type=EventType.FRAME_DROP,
+                packet_id=packet_id,
+                details={"drop_reason": "missing_sa_spi", "policy_id": policy.policy_id},
+            )
             return IPSecPolicyAction.DROP, None
         sa = self.sad.get(policy.sa_spi)
         if sa is None:
+            self.emit_trace(
+                layer=Layer.CRYPTO,
+                event_type=EventType.FRAME_DROP,
+                packet_id=packet_id,
+                details={"drop_reason": "sa_not_found", "spi": policy.sa_spi},
+            )
             return IPSecPolicyAction.DROP, None
 
         protected = packet.clone()
         protected.push_header(ESPHeader(spi=sa.spi, sequence=1, encrypted=True))
         protected.push_header(IPv4Header(src_ip=sa.src_ip, dst_ip=sa.dst_ip, protocol=50))
+        self.emit_trace(
+            layer=Layer.CRYPTO,
+            event_type=EventType.CRYPTO_ENCRYPT,
+            packet_id=packet_id,
+            details={
+                "transform": "esp",
+                "mode": IPSecMode(sa.mode).value,
+                "spi": sa.spi,
+            },
+        )
+        self.emit_trace(
+            layer=Layer.TUNNEL,
+            event_type=EventType.ENCAP_PUSH,
+            packet_id=packet_id,
+            details={
+                "outer_proto": "IPv4Header",
+                "inner_proto": type(packet.headers[0]).__name__ if packet.headers else "payload",
+                "tunnel_type": "ipsec",
+            },
+        )
         return IPSecPolicyAction.PROTECT, protected
 
     def inbound(self, packet: PacketStack) -> tuple["IPSecPolicyAction | str", PacketStack | None]:
         """Return (action, packet_or_none) after inbound ESP processing."""
+        packet_id = ensure_packet_id(packet)
         if not packet.headers:
+            self.emit_trace(
+                layer=Layer.CRYPTO,
+                event_type=EventType.FRAME_DROP,
+                packet_id=packet_id,
+                details={"drop_reason": "empty_packet"},
+            )
             return IPSecPolicyAction.DROP, None
 
         outer = packet.headers[0]
@@ -97,14 +145,46 @@ class IPsecProcess(ProtocolBase):
             return IPSecPolicyAction.BYPASS, packet.clone()
 
         if len(packet.headers) < 2 or not isinstance(packet.headers[1], ESPHeader):
+            self.emit_trace(
+                layer=Layer.CRYPTO,
+                event_type=EventType.FRAME_DROP,
+                packet_id=packet_id,
+                details={"drop_reason": "missing_esp_header"},
+            )
             return IPSecPolicyAction.DROP, None
 
         esp = packet.headers[1]
         if esp.spi not in self.sad:
+            self.emit_trace(
+                layer=Layer.CRYPTO,
+                event_type=EventType.FRAME_DROP,
+                packet_id=packet_id,
+                details={"drop_reason": "unknown_spi", "spi": esp.spi},
+            )
             return IPSecPolicyAction.DROP, None
 
         decapped = packet.clone()
         decapped.headers = decapped.headers[2:]
+        self.emit_trace(
+            layer=Layer.CRYPTO,
+            event_type=EventType.CRYPTO_DECRYPT,
+            packet_id=packet_id,
+            details={
+                "transform": "esp",
+                "mode": IPSecMode.TUNNEL.value,
+                "spi": esp.spi,
+            },
+        )
+        self.emit_trace(
+            layer=Layer.TUNNEL,
+            event_type=EventType.ENCAP_POP,
+            packet_id=packet_id,
+            details={
+                "outer_proto": "IPv4Header",
+                "inner_proto": type(decapped.headers[0]).__name__ if decapped.headers else "payload",
+                "tunnel_type": "ipsec",
+            },
+        )
         return IPSecPolicyAction.PROTECT, decapped
 
     def _match_policy(self, src_ip: str, dst_ip: str) -> SecurityPolicy | None:

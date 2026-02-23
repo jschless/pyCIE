@@ -88,6 +88,31 @@ pytest tests/labs/test_lab01_switching.py -k lookup -q
 - Not lowercasing destination MAC before broadcast comparison.
 - Returning nondeterministic interface order in flood results.
 
+## Visualization
+
+Capture trace while running this lab:
+
+```bash
+pycie run lab01 --trace-out traces/lab01.jsonl
+```
+
+Replay switching decisions:
+
+```bash
+pycie viz replay --trace traces/lab01.jsonl --event MAC_LEARN --event L2_FLOOD --event L2_UNICAST_FORWARD --event MAC_AGE_OUT
+```
+
+Expected event patterns:
+
+- Unknown unicast: `MAC_LEARN` then `L2_FLOOD`.
+- Known unicast: `MAC_LEARN` then `L2_UNICAST_FORWARD`.
+- Aging cycle: `MAC_AGE_OUT` for each expired entry.
+
+Advanced exercises:
+
+- Trigger MAC moves and explain why successive `MAC_LEARN` events update interface bindings.
+- Compare flood/unicast traces for the same destination after learning converges.
+
 ## Simplifications
 
 - No VLAN support.

@@ -50,6 +50,12 @@ Run one lab:
 pycie run lab01
 ```
 
+Run one lab and capture telemetry:
+
+```bash
+pycie run lab01 --trace-out traces/lab01.jsonl
+```
+
 Run all exercise labs:
 
 ```bash
@@ -66,6 +72,16 @@ Show doc map:
 
 ```bash
 pycie guide
+```
+
+Trace replay commands:
+
+```bash
+pycie viz replay --trace traces/lab01.jsonl --detail packet
+pycie viz packet --trace traces/lab01.jsonl --packet-id p1 --detail full
+pycie viz topology --trace traces/lab01.jsonl --packet-id p1
+pycie viz sequence --trace traces/lab01.jsonl --packet-id p1 --detail packet
+pycie viz stp --trace traces/lab02.jsonl
 ```
 
 ## Recommended learning paths
@@ -154,6 +170,7 @@ python -m pycie labs
 
 - Architecture: `docs/architecture.md`
 - Standards: `docs/standards.md`
+- Visualization: `docs/visualization.md`
 - Lab instructions: `labs/INSTRUCTIONS.md`
 - Roadmap: `docs/roadmap.md`
 - Product TODO: `docs/TODO.md`

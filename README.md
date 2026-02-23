@@ -37,6 +37,10 @@ Then use the CLI:
 pycie quickstart
 pycie labs
 pycie run lab01
+pycie run lab01 --trace-out traces/lab01.jsonl
+pycie viz replay --trace traces/lab01.jsonl --detail packet
+pycie viz topology --trace traces/lab01.jsonl --packet-id p1
+pycie viz sequence --trace traces/lab01.jsonl --packet-id p1 --detail packet
 ```
 
 If `pycie` is not on path:
@@ -50,10 +54,16 @@ python -m pycie labs
 - `pycie labs`: list available labs and README paths
 - `pycie show <labXX>`: show details for one lab
 - `pycie run <labXX>`: run one lab's exercise tests
+- `pycie run <labXX> --trace-out <file>`: run lab and capture telemetry JSONL
 - `pycie run all`: run all exercise tests
 - `pycie check`: run contract tests only
 - `pycie guide`: print key docs and recommended commands
 - `pycie quickstart`: print first-run setup steps
+- `pycie viz replay --trace <file>`: replay trace timeline
+- `pycie viz packet --trace <file> --packet-id <id>`: packet life-of-flow view
+- `pycie viz topology --trace <file>`: topology snapshot + packet position
+- `pycie viz sequence --trace <file>`: grouped playback over simulation time
+- `pycie viz stp --trace <file>`: STP election/role summary
 
 ## Lab model
 
@@ -69,6 +79,13 @@ Run one lab manually:
 
 ```bash
 pytest -m "lab01 and exercise"
+```
+
+Capture trace while running one lab:
+
+```bash
+pycie run lab01 --trace-out traces/lab01.jsonl
+pycie viz replay --trace traces/lab01.jsonl
 ```
 
 Run all exercise labs:
@@ -125,6 +142,7 @@ PYCIE_SRC=dist/student/src pytest -m "lab01 and exercise"
 ## Documentation
 
 - Usage guide: [`docs/usage.md`](docs/usage.md)
+- Visualization guide: [`docs/visualization.md`](docs/visualization.md)
 - Full lab instructions: [`labs/INSTRUCTIONS.md`](labs/INSTRUCTIONS.md)
 - Architecture: [`docs/architecture.md`](docs/architecture.md)
 - Standards references: [`docs/standards.md`](docs/standards.md)
