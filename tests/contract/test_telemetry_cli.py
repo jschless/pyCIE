@@ -290,3 +290,46 @@ def test_run_pytest_sets_trace_out_environment(monkeypatch: pytest.MonkeyPatch, 
     env = captured["env"]
     assert isinstance(env, dict)
     assert env["PYCIE_TRACE_OUT"] == str(trace_path.resolve())
+
+
+def test_run_pytest_sets_student_src_environment(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, repo_root: Path) -> None:
+    student_src = tmp_path / "student" / "src"
+    captured: dict[str, object] = {}
+
+    def fake_run(cmd, cwd=None, env=None):
+        captured["cmd"] = cmd
+        captured["cwd"] = cwd
+        captured["env"] = env
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    code = run_pytest(["-k", "nothing"], repo_root, student_src=student_src)
+
+    assert code == 0
+    assert captured["cwd"] == repo_root
+    env = captured["env"]
+    assert isinstance(env, dict)
+    assert env["PYCIE_SRC"] == str(student_src.resolve())
+
+
+def test_run_pytest_sets_trace_and_student_src(monkeypatch: pytest.MonkeyPatch, tmp_path: Path, repo_root: Path) -> None:
+    trace_path = tmp_path / "run_trace.jsonl"
+    student_src = tmp_path / "student" / "src"
+    captured: dict[str, object] = {}
+
+    def fake_run(cmd, cwd=None, env=None):
+        captured["cmd"] = cmd
+        captured["cwd"] = cwd
+        captured["env"] = env
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+
+    code = run_pytest(["-k", "nothing"], repo_root, trace_out=trace_path, student_src=student_src)
+
+    assert code == 0
+    env = captured["env"]
+    assert isinstance(env, dict)
+    assert env["PYCIE_TRACE_OUT"] == str(trace_path.resolve())
+    assert env["PYCIE_SRC"] == str(student_src.resolve())

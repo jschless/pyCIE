@@ -66,7 +66,13 @@ def validate_lab_id(lab_id: str, valid_labs: Sequence[str]) -> str:
     raise ValueError(f"Unknown lab id {lab_id!r}.{hint}")
 
 
-def run_pytest(args: list[str], repo_root: Path, *, trace_out: Path | None = None) -> int:
+def run_pytest(
+    args: list[str],
+    repo_root: Path,
+    *,
+    trace_out: Path | None = None,
+    student_src: Path | None = None,
+) -> int:
     """Run pytest with forwarded arguments."""
     cmd = [sys.executable, "-m", "pytest", *args]
     env = os.environ.copy()
@@ -75,6 +81,10 @@ def run_pytest(args: list[str], repo_root: Path, *, trace_out: Path | None = Non
         trace_path.parent.mkdir(parents=True, exist_ok=True)
         env[TRACE_OUT_ENV] = str(trace_path)
         print(f"Trace output: {trace_path}")
+    if student_src is not None:
+        src_path = student_src.expanduser().resolve()
+        env["PYCIE_SRC"] = str(src_path)
+        print(f"Student source override: {src_path}")
 
     print("Running:", " ".join(cmd))
     completed = subprocess.run(cmd, cwd=repo_root, env=env)
@@ -110,11 +120,51 @@ def cmd_show(namespace: argparse.Namespace, repo_root: Path) -> int:
 def cmd_run(namespace: argparse.Namespace, repo_root: Path) -> int:
     """Run exercise tests for one lab or all labs."""
     if namespace.target == "all":
-        return run_pytest(["-m", "exercise"], repo_root, trace_out=namespace.trace_out)
+        return run_pytest(
+            ["-m", "exercise"],
+            repo_root,
+            trace_out=namespace.trace_out,
+            student_src=namespace.student_src,
+        )
 
     lab_ids = load_lab_ids(repo_root)
     lab_id = validate_lab_id(namespace.target, lab_ids)
-    return run_pytest(["-m", f"{lab_id} and exercise"], repo_root, trace_out=namespace.trace_out)
+    return run_pytest(
+        ["-m", f"{lab_id} and exercise"],
+        repo_root,
+        trace_out=namespace.trace_out,
+        student_src=namespace.student_src,
+    )
+
+
+def cmd_scaffold(namespace: argparse.Namespace, repo_root: Path) -> int:
+    """Generate a student TODO scaffold from reference implementation."""
+    output = namespace.output.expanduser().resolve()
+    input_src = (repo_root / "src" / "pycie").resolve()
+    script = (repo_root / "tools" / "make_student_scaffold.py").resolve()
+
+    cmd = [
+        sys.executable,
+        str(script),
+        "--input",
+        str(input_src),
+        "--output",
+        str(output),
+        "--labs",
+        namespace.labs,
+    ]
+    if namespace.strict:
+        cmd.append("--strict")
+
+    print("Running:", " ".join(cmd))
+    completed = subprocess.run(cmd, cwd=repo_root)
+    if completed.returncode != 0:
+        return int(completed.returncode)
+
+    student_src = output.parent
+    print(f"Scaffold generated: {output}")
+    print(f"Use for lab runs: pycie run lab01 --student-src {student_src}")
+    return 0
 
 
 def cmd_check(namespace: argparse.Namespace, repo_root: Path) -> int:
@@ -142,7 +192,9 @@ def cmd_guide(namespace: argparse.Namespace, repo_root: Path) -> int:
     print()
     print("Suggested commands:")
     print("  pycie labs")
+    print("  pycie scaffold --labs all")
     print("  pycie run lab01")
+    print("  pycie run lab01 --student-src dist/student/src")
     print("  pycie run lab01 --trace-out traces/lab01.jsonl")
     print("  pycie viz replay --trace traces/lab01.jsonl --detail packet")
     print("  pycie viz packet --trace traces/lab01.jsonl --packet-id p1")
@@ -161,10 +213,11 @@ def cmd_quickstart(namespace: argparse.Namespace, repo_root: Path) -> int:
     print("2) source .venv/bin/activate")
     print("3) pip install -e .[dev]")
     print("4) pycie labs")
-    print("5) pycie run lab01")
-    print("6) pycie run lab01 --trace-out traces/lab01.jsonl")
-    print("7) pycie viz replay --trace traces/lab01.jsonl --detail packet")
-    print("8) pycie viz topology --trace traces/lab01.jsonl --packet-id p1")
+    print("5) pycie scaffold --labs all")
+    print("6) pycie run lab01 --student-src dist/student/src")
+    print("7) pycie run lab01 --trace-out traces/lab01.jsonl")
+    print("8) pycie viz replay --trace traces/lab01.jsonl --detail packet")
+    print("9) pycie viz topology --trace traces/lab01.jsonl --packet-id p1")
     print()
     print("If pycie command is unavailable, use: python -m pycie <subcommand>")
     return 0
@@ -288,7 +341,31 @@ def build_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Write telemetry JSONL to this path while tests run",
     )
+    p_run.add_argument(
+        "--student-src",
+        type=Path,
+        help="Run tests against alternate src root (e.g. dist/student/src)",
+    )
     p_run.set_defaults(func=cmd_run)
+
+    p_scaffold = subparsers.add_parser("scaffold", help="Generate student TODO scaffold")
+    p_scaffold.add_argument(
+        "--labs",
+        default="all",
+        help="Comma-separated labs to strip (default: all)",
+    )
+    p_scaffold.add_argument(
+        "--output",
+        type=Path,
+        default=Path("dist/student/src/pycie"),
+        help="Output scaffold package path (default: dist/student/src/pycie)",
+    )
+    p_scaffold.add_argument(
+        "--strict",
+        action="store_true",
+        help="Fail if configured scaffold targets are missing",
+    )
+    p_scaffold.set_defaults(func=cmd_scaffold)
 
     p_check = subparsers.add_parser("check", help="Run contract tests")
     p_check.set_defaults(func=cmd_check)

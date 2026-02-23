@@ -50,6 +50,18 @@ Run one lab:
 pycie run lab01
 ```
 
+Generate TODO scaffold from reference source:
+
+```bash
+pycie scaffold --labs all
+```
+
+Run one lab against student scaffold source:
+
+```bash
+pycie run lab01 --student-src dist/student/src
+```
+
 Run one lab and capture telemetry:
 
 ```bash
@@ -124,14 +136,19 @@ pycie viz stp --trace traces/lab02.jsonl
 Generate student TODO scaffold:
 
 ```bash
-python tools/make_student_scaffold.py --input src/pycie --output dist/student/src/pycie --labs all
+pycie scaffold --labs all
 ```
 
 Run tests against scaffold path:
 
 ```bash
-PYCIE_SRC=dist/student/src pytest -m "lab01 and exercise"
+pycie run lab01 --student-src dist/student/src
 ```
+
+### Fresh clone behavior
+
+`main` ships with reference solutions. If you run `pycie run lab01` directly in a fresh clone, tests run against solved source.
+To force TODO-based student work, always generate scaffold first and run with `--student-src`.
 
 ## Repo map
 

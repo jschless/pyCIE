@@ -106,13 +106,13 @@ pytest -m "lab16 and exercise"
 Generate a student scaffold from reference code:
 
 ```bash
-python tools/make_student_scaffold.py --input src/pycie --output dist/student/src/pycie --labs all
+pycie scaffold --labs all
 ```
 
 Run tests against scaffold output (instead of reference source):
 
 ```bash
-PYCIE_SRC=dist/student/src pytest -m "lab01 and exercise"
+pycie run lab01 --student-src dist/student/src
 ```
 
 ## Suggested pacing

@@ -36,7 +36,8 @@ Then use the CLI:
 ```bash
 pycie quickstart
 pycie labs
-pycie run lab01
+pycie scaffold --labs all
+pycie run lab01 --student-src dist/student/src
 pycie run lab01 --trace-out traces/lab01.jsonl
 pycie viz replay --trace traces/lab01.jsonl --detail packet
 pycie viz topology --trace traces/lab01.jsonl --packet-id p1
@@ -54,8 +55,10 @@ python -m pycie labs
 - `pycie labs`: list available labs and README paths
 - `pycie show <labXX>`: show details for one lab
 - `pycie run <labXX>`: run one lab's exercise tests
+- `pycie run <labXX> --student-src <dir>`: run tests against generated student scaffold source
 - `pycie run <labXX> --trace-out <file>`: run lab and capture telemetry JSONL
 - `pycie run all`: run all exercise tests
+- `pycie scaffold --labs <list|all>`: generate TODO-only student scaffold under `dist/student/src/pycie` by default
 - `pycie check`: run contract tests only
 - `pycie guide`: print key docs and recommended commands
 - `pycie quickstart`: print first-run setup steps
@@ -135,8 +138,24 @@ pytest -m exercise
 ### Scaffold workflow
 
 ```bash
-python tools/make_student_scaffold.py --input src/pycie --output dist/student/src/pycie --labs all
-PYCIE_SRC=dist/student/src pytest -m "lab01 and exercise"
+pycie scaffold --labs all
+pycie run lab01 --student-src dist/student/src
+```
+
+### Fresh-clone student mode (blank labs)
+
+`main` includes the reference implementation, so `pycie run lab01` will pass immediately against solved code.
+If you want blank TODO labs after cloning:
+
+```bash
+pycie scaffold --labs all
+pycie run lab01 --student-src dist/student/src
+```
+
+Optional isolation:
+
+```bash
+git checkout -b student/<name>
 ```
 
 ## Documentation

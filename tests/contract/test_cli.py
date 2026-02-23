@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from pathlib import Path
+import subprocess
 
 import pytest
 
-from pycie.cli import find_lab_readme, find_repo_root, load_lab_ids, main, validate_lab_id
+from pycie.cli import build_parser, find_lab_readme, find_repo_root, load_lab_ids, main, validate_lab_id
 
 
 @pytest.fixture()
@@ -55,3 +56,51 @@ def test_cli_main_rejects_unknown_lab(monkeypatch: pytest.MonkeyPatch, capsys: p
 
     assert exit_code == 2
     assert "Unknown lab id" in err
+
+
+def test_build_parser_accepts_student_src_on_run() -> None:
+    parser = build_parser()
+    namespace = parser.parse_args(["run", "lab01", "--student-src", "dist/student/src"])
+
+    assert namespace.target == "lab01"
+    assert namespace.student_src == Path("dist/student/src")
+
+
+def test_build_parser_accepts_scaffold_defaults() -> None:
+    parser = build_parser()
+    namespace = parser.parse_args(["scaffold"])
+
+    assert namespace.labs == "all"
+    assert namespace.output == Path("dist/student/src/pycie")
+    assert namespace.strict is False
+
+
+def test_cli_main_scaffold_invokes_generator(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    repo_root: Path,
+    tmp_path: Path,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_run(cmd, cwd=None):
+        captured["cmd"] = cmd
+        captured["cwd"] = cwd
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.chdir(repo_root)
+    output = tmp_path / "student" / "src" / "pycie"
+
+    exit_code = main(["scaffold", "--labs", "lab01", "--output", str(output)])
+    out = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert captured["cwd"] == repo_root
+    cmd = captured["cmd"]
+    assert isinstance(cmd, list)
+    assert "--labs" in cmd
+    assert "lab01" in cmd
+    assert "--output" in cmd
+    assert str(output.resolve()) in cmd
+    assert "Use for lab runs: pycie run lab01 --student-src" in out
