@@ -11,15 +11,15 @@ requires-python = ">=3.11"
 authors = [{ name = "pyCIE" }]
 dependencies = []
 
+[project.scripts]
+pycie = "pycie.cli:main"
+
 [project.optional-dependencies]
 dev = [
   "pytest>=8.0",
   "pytest-cov>=5.0",
   "ruff>=0.6",
 ]
-
-[project.scripts]
-pycie = "pycie.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

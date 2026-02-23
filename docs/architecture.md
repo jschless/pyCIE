@@ -21,6 +21,7 @@
   - MPLS LFIB forwarding helpers
 - `src/pycie/protocols`: protocol scaffolds per lab
 - `src/pycie/scenario`: scenario DSL and runner scaffolding
+- `src/pycie/telemetry`: trace events, sinks, and CLI replay renderers
 - `tests/contract`: shape and import guarantees
 - `tests/labs`: behavior-driven lab tests
 

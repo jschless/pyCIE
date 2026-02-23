@@ -17,6 +17,56 @@ Implement longest-prefix matching, tie-breakers, TTL handling, and drop reason c
   - `IPv4Forwarder.lookup`
   - `IPv4Forwarder.forward`
 
+## Implementation hints
+
+- Use Python `ipaddress` helpers for prefix containment and prefix length comparisons.
+- Route selection should be deterministic:
+  - longest-prefix first, then admin distance, then metric, then stable tie-break keys.
+- `forward` should return `(egress_if, packet_out, drop_reason)`.
+- Treat TTL expiry as a drop before forwarding.
+- Clone packets when modifying headers so callers keep original input intact.
+
+## Step-by-step implementation plan
+
+1. Run the lab tests:
+
+```bash
+pytest -m "lab07 and exercise"
+```
+
+2. Implement route CRUD (`install_route`, `remove_route`).
+   - Avoid accumulating stale duplicate candidates.
+
+3. Implement `lookup`.
+   - Filter routes that contain destination IP.
+   - Apply LPM and deterministic tie-breaks.
+
+4. Implement `forward`.
+   - Validate IPv4 header presence.
+   - Enforce TTL decrement/drop behavior.
+   - Resolve best route and produce egress decision.
+
+5. Re-run tests:
+
+```bash
+pytest -m "lab07 and exercise"
+```
+
+## Fast feedback commands
+
+```bash
+pytest tests/labs/test_lab07_ipv4_forwarding.py -k longest_prefix -q
+pytest tests/labs/test_lab07_ipv4_forwarding.py -k tiebreaks -q
+pytest tests/labs/test_lab07_ipv4_forwarding.py -k ttl_expired -q
+```
+
+## Common mistakes
+
+- Comparing prefixes as strings instead of parsed networks.
+- Forgetting deterministic tie-break behavior when prefix length is equal.
+- Modifying input packet in place instead of cloning.
+- Returning wrong drop reasons for missing route vs TTL expiry.
+
 ## Visualization
 
 Capture trace while running this lab:

@@ -19,6 +19,54 @@ Implement tunnel encapsulation and decapsulation using explicit header-stack tra
   - `EncapsulationPipeline.encapsulate`
   - `EncapsulationPipeline.decapsulate`
 
+## Implementation hints
+
+- Header order matters:
+  - outer IPv4 first, then GRE, then inner packet.
+- `PacketStack.push_header(...)` pushes to the front, so order of operations is important.
+- GRE outer IPv4 protocol number should align with GRE transport (`47`).
+- Decapsulation should validate header shape before stripping.
+- Preserve packet immutability by cloning before mutation.
+
+## Step-by-step implementation plan
+
+1. Run the lab tests:
+
+```bash
+pytest -m "lab11 and exercise"
+```
+
+2. Implement GRE path in `EncapsulationPipeline`.
+   - Add GRE encapsulation behavior.
+   - Add GRE decapsulation checks and header removal logic.
+
+3. Implement tunnel endpoint methods in `GRETunnelProcess`.
+   - `encapsulate`: register/track tunnel identity and call pipeline.
+   - `decapsulate`: validate GRE packet, map to tunnel, return inner packet.
+
+4. Validate round-trip behavior.
+   - Encapsulate then decapsulate should preserve the inner payload stack.
+
+5. Re-run tests:
+
+```bash
+pytest -m "lab11 and exercise"
+```
+
+## Fast feedback commands
+
+```bash
+pytest tests/labs/test_lab11_gre.py -k pipeline -q
+pytest tests/labs/test_lab11_gre.py -k roundtrip -q
+```
+
+## Common mistakes
+
+- Building headers in the wrong order (inner/outer reversed).
+- Forgetting to verify protocol/header types before decapsulation.
+- Returning mutated input packet references instead of cloned outputs.
+- Ignoring GRE key/tunnel identity tracking in endpoint logic.
+
 ## Visualization
 
 Capture trace while running this lab:
