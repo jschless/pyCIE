@@ -91,6 +91,19 @@
     "ospf_multi_area": true,
     "ipv4_forwarding": true
   },
+  "lab19": {
+    "ikev2": true,
+    "ipsec": true,
+    "policy": true
+  },
+  "lab20": {
+    "ipv6_nd": true,
+    "ipv4_forwarding": true
+  },
+  "lab21": {
+    "nat44": true,
+    "ipv4_forwarding": true
+  },
   "lab23": {
     "isis": true,
     "ipv4_forwarding": true

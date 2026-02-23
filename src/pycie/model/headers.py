@@ -29,6 +29,15 @@ class IPv4Header:
 
 
 @dataclass(frozen=True)
+class IPv6Header:
+    src_ip: str
+    dst_ip: str
+    hop_limit: int = 64
+    traffic_class: int = 0
+    next_header: int = 0
+
+
+@dataclass(frozen=True)
 class GREHeader:
     protocol_type: int
     key: int | None = None

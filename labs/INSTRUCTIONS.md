@@ -136,9 +136,9 @@ pycie run lab01 --student-src dist/student/src
 
 For post-capstone labs (`lab17+`), use the same pacing model:
 
-1. Start with 3-5 days for service/security labs (`lab31`-`lab33`, `lab37`).
-2. Use 4-7 days for control-plane labs (`lab17`, `lab18`, `lab23`, `lab34`, `lab36`, `lab38`).
-3. Use 5-8 days for pipeline/overlay labs (`lab30`, `lab35`, `lab39`).
+1. Start with 3-5 days for service/security labs (`lab19`, `lab31`-`lab33`, `lab37`).
+2. Use 4-7 days for control-plane labs (`lab17`, `lab18`, `lab20`, `lab23`, `lab34`, `lab36`, `lab38`).
+3. Use 5-8 days for pipeline/overlay labs (`lab21`, `lab30`, `lab35`, `lab39`).
 
 ## Completion standard
 

@@ -7,6 +7,7 @@ from .headers import (
     EthernetHeader,
     GREHeader,
     IPv4Header,
+    IPv6Header,
     MPLSLabel,
 )
 from .packet import PacketStack
@@ -20,6 +21,7 @@ __all__ = [
     "EthernetHeader",
     "GREHeader",
     "IPv4Header",
+    "IPv6Header",
     "MPLSLabel",
     "MatchConditions",
     "PacketStack",

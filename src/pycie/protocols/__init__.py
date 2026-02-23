@@ -11,12 +11,14 @@ from .control_plane_db import BGPDatabase, LDPDatabase, OSPFLSDB
 from .dhcp import DHCPServer
 from .evpn import EVPNControlPlane
 from .gre import GRETunnelProcess
+from .ikev2_for_ipsec import IKEv2Process
 from .ipsec import IPsecProcess
 from .isis import ISISProcess
 from .ldp import LDPProcess
 from .macsec import MACsecProcess
 from .mpls import MPLSProcess
 from .multicast import MulticastProcess
+from .nat44_pipeline import NAT44Pipeline
 from .ospf import OSPFProcess
 from .ospf_multi_area import OSPFMultiAreaProcess
 from .policy import PolicyProcess
@@ -26,6 +28,7 @@ from .stp import STPProcess
 from .switching import LearningSwitch
 from .route_selection import RouteSelectionEngine
 from .vrf import VRFProcess
+from .ipv6_nd_forwarding import IPv6NDForwarder
 from .vxlan import VXLANBridge
 
 __all__ = [
@@ -41,7 +44,9 @@ __all__ = [
     "DHCPServer",
     "EVPNControlPlane",
     "GRETunnelProcess",
+    "IKEv2Process",
     "IPsecProcess",
+    "IPv6NDForwarder",
     "ISISProcess",
     "LDPDatabase",
     "LDPProcess",
@@ -49,6 +54,7 @@ __all__ = [
     "MACsecProcess",
     "MPLSProcess",
     "MulticastProcess",
+    "NAT44Pipeline",
     "OSPFProcess",
     "OSPFMultiAreaProcess",
     "OSPFLSDB",

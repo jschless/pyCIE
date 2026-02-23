@@ -149,7 +149,7 @@ Acceptance criteria:
 
 ### Sprint 4: Protocol Depth B (May 4 to May 24, 2026)
 
-Status: `planned`
+Status: `done`
 
 Deliverables:
 

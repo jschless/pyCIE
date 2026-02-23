@@ -41,6 +41,9 @@ class CapabilitySet:
     rib_fib_pipeline: bool = False
     bgp_fsm_transport: bool = False
     ospf_multi_area: bool = False
+    ikev2: bool = False
+    ipv6_nd: bool = False
+    nat44: bool = False
 
     def require(self, feature: str) -> None:
         """Raise if a feature is unavailable in this capability set."""

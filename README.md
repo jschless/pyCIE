@@ -109,11 +109,11 @@ pytest -m exercise
 
 ### Foundational path
 
-- `lab01` through `lab18`
+- `lab01` through `lab21`
 
 ### Router internals path
 
-- `lab17` -> `lab18` -> `lab23` -> `lab38` -> `lab30` -> `lab39`
+- `lab17` -> `lab18` -> `lab19` -> `lab20` -> `lab21` -> `lab23` -> `lab38` -> `lab30` -> `lab39`
 
 ### Services/security path
 
