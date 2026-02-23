@@ -5,7 +5,17 @@ from __future__ import annotations
 from dataclasses import fields, is_dataclass
 from typing import Any
 
-from pycie.model.headers import Dot1QHeader, ESPHeader, EthernetHeader, GREHeader, IPv4Header, MPLSLabel
+from pycie.model.headers import (
+    Dot1QHeader,
+    ESPHeader,
+    EthernetHeader,
+    GREHeader,
+    IPv4Header,
+    IPv6Header,
+    MPLSLabel,
+    TCPHeader,
+    UDPHeader,
+)
 from pycie.model.packet import PacketStack
 
 
@@ -133,6 +143,13 @@ def _header_summary(header: Any) -> str:
         return f"802.1Q(vlan={header.vlan_id},pcp={header.pcp})"
     if isinstance(header, IPv4Header):
         return f"IPv4({header.src_ip}->{header.dst_ip},ttl={header.ttl},proto={header.protocol})"
+    if isinstance(header, IPv6Header):
+        return f"IPv6({header.src_ip}->{header.dst_ip},hop={header.hop_limit},nh={header.next_header})"
+    if isinstance(header, TCPHeader):
+        flags = ",".join(sorted(header.flags))
+        return f"TCP({header.src_port}->{header.dst_port},flags={flags or 'none'})"
+    if isinstance(header, UDPHeader):
+        return f"UDP({header.src_port}->{header.dst_port},len={header.length})"
     if isinstance(header, GREHeader):
         key = f",key={header.key}" if header.key is not None else ""
         return f"GRE(proto=0x{header.protocol_type:04x}{key})"
@@ -164,6 +181,12 @@ def _header_name(header: Any) -> str:
         return "802.1Q"
     if isinstance(header, IPv4Header):
         return "IPv4"
+    if isinstance(header, IPv6Header):
+        return "IPv6"
+    if isinstance(header, TCPHeader):
+        return "TCP"
+    if isinstance(header, UDPHeader):
+        return "UDP"
     if isinstance(header, GREHeader):
         return "GRE"
     if isinstance(header, ESPHeader):

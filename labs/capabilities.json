@@ -26,6 +26,20 @@
     "bgp": true,
     "bfd": true
   },
+  "lab06a": {
+    "packet_construction": true
+  },
+  "lab06b": {
+    "packet_construction": true,
+    "transport_basics": true
+  },
+  "lab06c": {
+    "packet_construction": true,
+    "transport_basics": true,
+    "ip_addressing_basics": true,
+    "ipv4_forwarding": true,
+    "arp": true
+  },
   "lab07": {
     "ipv4_forwarding": true,
     "arp": true
@@ -107,6 +121,12 @@
   "lab23": {
     "isis": true,
     "ipv4_forwarding": true
+  },
+  "lab27": {
+    "qos": true,
+    "policy": true,
+    "ipv4_forwarding": true,
+    "transport_basics": true
   },
   "lab30": {
     "route_selection": true,

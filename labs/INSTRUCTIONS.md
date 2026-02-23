@@ -2,7 +2,9 @@
 
 This workbook is designed as a progression from foundational L2 forwarding to multi-protocol convergence and failure detection.
 
-The first six labs focus on core control-plane behavior. Labs 07+ extend into full data-plane modeling, encapsulation, policy, VRF, and capstone failure scenarios.
+The first six labs focus on core control-plane behavior.
+Labs `06a`-`06c` add packet/transport/addressing fundamentals before `lab07`.
+Labs `07+` extend into full data-plane modeling, encapsulation, policy, VRF, and capstone failure scenarios.
 
 Use `/docs/roadmap.md` as the active backlog for realism upgrades and new labs (`lab17+`).
 
@@ -123,22 +125,26 @@ pycie run lab01 --student-src dist/student/src
 4. Lab 04: 1-2 weeks
 5. Lab 05: 4-6 days
 6. Lab 06: 3-5 days
-7. Lab 07: 3-5 days
-8. Lab 08: 3-4 days
-9. Lab 09: 4-6 days
-10. Lab 10: 4-6 days
-11. Lab 11: 3-5 days
-12. Lab 12: 5-8 days
-13. Lab 13: 4-6 days
-14. Lab 14: 5-8 days
-15. Lab 15: 4-7 days
-16. Lab 16: 1-2 weeks
+7. Lab 06a: 2-4 days
+8. Lab 06b: 3-5 days
+9. Lab 06c: 3-5 days
+10. Lab 07: 3-5 days
+11. Lab 08: 3-4 days
+12. Lab 09: 4-6 days
+13. Lab 10: 4-6 days
+14. Lab 11: 3-5 days
+15. Lab 12: 5-8 days
+16. Lab 13: 4-6 days
+17. Lab 14: 5-8 days
+18. Lab 15: 4-7 days
+19. Lab 16: 1-2 weeks
 
 For post-capstone labs (`lab17+`), use the same pacing model:
 
 1. Start with 3-5 days for service/security labs (`lab19`, `lab31`-`lab33`, `lab37`).
 2. Use 4-7 days for control-plane labs (`lab17`, `lab18`, `lab20`, `lab23`, `lab34`, `lab36`, `lab38`).
-3. Use 5-8 days for pipeline/overlay labs (`lab21`, `lab30`, `lab35`, `lab39`).
+3. Use 3-5 days for QoS/policy labs (`lab27`, `lab31`).
+4. Use 5-8 days for pipeline/overlay labs (`lab21`, `lab30`, `lab35`, `lab39`).
 
 ## Completion standard
 

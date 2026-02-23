@@ -44,6 +44,10 @@ class CapabilitySet:
     ikev2: bool = False
     ipv6_nd: bool = False
     nat44: bool = False
+    packet_construction: bool = False
+    transport_basics: bool = False
+    ip_addressing_basics: bool = False
+    qos: bool = False
 
     def require(self, feature: str) -> None:
         """Raise if a feature is unavailable in this capability set."""

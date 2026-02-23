@@ -10,7 +10,7 @@
   - node lifecycle hooks
   - `RIB` and `FIB` structures
 - `src/pycie/model`: packet/header/policy/capability data models
-  - encapsulation stack headers (Ethernet, 802.1Q, IPv4, GRE, ESP, MPLS)
+  - encapsulation stack headers (Ethernet, 802.1Q, IPv4/IPv6, TCP/UDP, GRE, ESP, MPLS)
   - lab capability matrix representation
   - route-policy data structures
 - `src/pycie/forwarding`: data-plane forwarding pipelines
@@ -20,6 +20,8 @@
   - encapsulation/decapsulation helpers
   - MPLS LFIB forwarding helpers
 - `src/pycie/protocols`: protocol scaffolds per lab
+  - foundational labs: packet construction, transport fundamentals, IP/MAC lookup basics
+  - QoS lab: DSCP marking, queue admission, and weighted scheduling model
 - `src/pycie/scenario`: scenario DSL and runner scaffolding
 - `src/pycie/telemetry`: trace events, sinks, and CLI replay renderers
 - `tests/contract`: shape and import guarantees

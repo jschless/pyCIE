@@ -20,6 +20,10 @@ dev = [
   "pytest-cov>=5.0",
   "ruff>=0.6",
 ]
+docs = [
+  "mkdocs>=1.6",
+  "mkdocs-material>=9.5",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -39,6 +43,9 @@ markers = [
   "lab04: Lab 04 BGP",
   "lab05: Lab 05 LDP",
   "lab06: Lab 06 BFD",
+  "lab06a: Lab 06a packet construction",
+  "lab06b: Lab 06b TCP/UDP fundamentals",
+  "lab06c: Lab 06c IP subnet and MAC forwarding basics",
   "lab07: Lab 07 IPv4 forwarding pipeline",
   "lab08: Lab 08 ARP behavior",
   "lab09: Lab 09 VLAN bridging",
@@ -55,6 +62,7 @@ markers = [
   "lab20: Lab 20 IPv6 ND forwarding",
   "lab21: Lab 21 NAT44 pipeline",
   "lab23: Lab 23 IS-IS L1/L2 foundations",
+  "lab27: Lab 27 QoS marking and queueing",
   "lab30: Lab 30 route selection and redistribution",
   "lab31: Lab 31 ACL filtering",
   "lab32: Lab 32 AAA access control",

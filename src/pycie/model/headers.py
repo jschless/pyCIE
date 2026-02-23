@@ -38,6 +38,25 @@ class IPv6Header:
 
 
 @dataclass(frozen=True)
+class UDPHeader:
+    src_port: int
+    dst_port: int
+    length: int = 8
+    checksum: int = 0
+
+
+@dataclass(frozen=True)
+class TCPHeader:
+    src_port: int
+    dst_port: int
+    seq: int = 0
+    ack: int = 0
+    flags: frozenset[str] = frozenset()
+    window: int = 65535
+    checksum: int = 0
+
+
+@dataclass(frozen=True)
 class GREHeader:
     protocol_type: int
     key: int | None = None

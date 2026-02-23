@@ -31,6 +31,14 @@ source .venv/bin/activate
 pip install -e .[dev]
 ```
 
+Optional shortcuts via `Makefile`:
+
+```bash
+make bootstrap
+make check
+make run-foundations
+```
+
 Then use the CLI:
 
 ```bash
@@ -38,6 +46,9 @@ pycie quickstart
 pycie labs
 pycie scaffold --labs all
 pycie run lab01
+pycie run lab06a
+pycie run lab06b
+pycie run lab06c
 pycie run lab01 --trace-out traces/lab01.jsonl
 pycie viz replay --trace traces/lab01.jsonl --detail packet
 pycie viz topology --trace traces/lab01.jsonl --packet-id p1
@@ -51,6 +62,11 @@ If `pycie` is not on path:
 ```bash
 python -m pycie labs
 ```
+
+Guided docs:
+
+- Start here: [`docs/getting_started.md`](docs/getting_started.md)
+- Textbook tutorial: [`docs/tutorial/index.md`](docs/tutorial/index.md)
 
 ## CLI commands
 
@@ -109,11 +125,15 @@ pytest -m exercise
 
 ### Foundational path
 
-- `lab01` through `lab21`
+- `lab01` -> `lab02` -> `lab03` -> `lab04` -> `lab05` -> `lab06` -> `lab06a` -> `lab06b` -> `lab06c` -> `lab07` -> ... -> `lab21`
 
 ### Router internals path
 
-- `lab17` -> `lab18` -> `lab19` -> `lab20` -> `lab21` -> `lab23` -> `lab38` -> `lab30` -> `lab39`
+- `lab06c` -> `lab17` -> `lab18` -> `lab19` -> `lab20` -> `lab21` -> `lab23` -> `lab38` -> `lab30` -> `lab39`
+
+### QoS and policy path
+
+- `lab06b` -> `lab06c` -> `lab13` -> `lab27` -> `lab31`
 
 ### Services/security path
 
@@ -183,10 +203,30 @@ git checkout -b student/<name>
 
 ## Documentation
 
+- Start here: [`docs/getting_started.md`](docs/getting_started.md)
+- Textbook tutorial: [`docs/tutorial/index.md`](docs/tutorial/index.md)
 - Usage guide: [`docs/usage.md`](docs/usage.md)
+- Docs site workflow: [`docs/docs_site.md`](docs/docs_site.md)
 - Visualization guide: [`docs/visualization.md`](docs/visualization.md)
 - Full lab instructions: [`labs/INSTRUCTIONS.md`](labs/INSTRUCTIONS.md)
 - Architecture: [`docs/architecture.md`](docs/architecture.md)
 - Standards references: [`docs/standards.md`](docs/standards.md)
 - Roadmap/backlog: [`docs/roadmap.md`](docs/roadmap.md)
 - Product TODO: [`docs/TODO.md`](docs/TODO.md)
+
+## Docs site (GitHub Pages)
+
+Build docs locally:
+
+```bash
+pip install -e .[docs]
+mkdocs serve
+```
+
+Run strict static build checks:
+
+```bash
+mkdocs build --strict
+```
+
+The repository includes `.github/workflows/docs.yml` to build docs on pull requests and deploy to GitHub Pages on `main`.

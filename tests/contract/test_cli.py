@@ -7,7 +7,7 @@ import subprocess
 
 import pytest
 
-from pycie.cli import build_parser, find_lab_readme, find_repo_root, load_lab_ids, main, validate_lab_id
+from pycie.cli import _lab_sort_key, build_parser, find_lab_readme, find_repo_root, load_lab_ids, main, validate_lab_id
 
 
 @pytest.fixture()
@@ -20,6 +20,14 @@ def test_load_lab_ids_includes_known_labs(repo_root: Path) -> None:
     assert "lab01" in lab_ids
     assert "lab16" in lab_ids
     assert "lab39" in lab_ids
+    assert "lab06a" in lab_ids
+    assert "lab06b" in lab_ids
+    assert "lab06c" in lab_ids
+
+
+def test_lab_sort_key_orders_suffix_labs_after_numeric_base() -> None:
+    ordered = sorted(["lab07", "lab06c", "lab06", "lab06b", "lab06a"], key=_lab_sort_key)
+    assert ordered == ["lab06", "lab06a", "lab06b", "lab06c", "lab07"]
 
 
 def test_find_lab_readme_returns_expected_path(repo_root: Path) -> None:

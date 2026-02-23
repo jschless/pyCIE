@@ -25,6 +25,7 @@ These are now the highest-value gaps relative to current protocol breadth:
 2. Scenario-driven learning loops (guided failure/reconvergence stories).
 3. Realism progression model per lab (`simplified -> realistic` ladder).
 4. Contributor scaling and metadata drift prevention.
+5. Explicit packet/transport/IP/MAC fundamentals before policy-heavy labs.
 
 ## 90-Day Execution Plan (February 23, 2026 to May 24, 2026)
 
@@ -164,6 +165,29 @@ Acceptance criteria:
 - Basic scenario coverage exists for at least one integration path (IPsec or NAT).
 - No regressions in existing exercise suites.
 
+### Sprint 5: Foundational Depth Track (May 25 to June 14, 2026)
+
+Status: `in_progress`
+
+Deliverables:
+
+- Implement `lab06a_packet_construction`.
+- Implement `lab06b_tcp_udp_fundamentals`.
+- Implement `lab06c_ip_subnet_mac_forwarding_basics`.
+- Implement `lab27_qos_marking_queueing`.
+- Add missing `lab21` edge-case test coverage to close NAT44 quality gap.
+
+Acceptance criteria:
+
+- New foundational labs are runnable through CLI and pytest markers:
+  - `pycie run lab06a`
+  - `pycie run lab06b`
+  - `pycie run lab06c`
+  - `pycie run lab27`
+- `lab21` includes both exercise and edge-case suites.
+- Capability matrix and scaffold targets include all new fundamentals labs.
+- Learning path docs show early-core placement for fundamentals (`lab06a/b/c` before `lab07`).
+
 ### Cross-cutting track: Pedagogy and UX (May 11 to May 24, 2026)
 
 Status: `planned`
@@ -175,18 +199,23 @@ Deliverables:
 - Add per-lab metadata for:
   - advanced challenge flags
   - prerequisite hints
+- Add textbook-style tutorial docs with chapter sequencing.
+- Add GitHub Pages docs build/deploy workflow.
 
 Acceptance criteria:
 
 - Explain command maps common failures to remediation hints.
 - Lab docs/CLI surface prerequisite and challenge metadata consistently.
+- Docs include a first-time onboarding page and textbook chapter map.
+- Docs site builds in CI with strict link validation.
 
 ## Highest ROI Order (if scope must be reduced)
 
 1. `viz web` experience.
 2. Scenario/failure story tooling.
-3. `lab17` + `lab18`.
-4. `lab19` + `lab20`.
+3. Fundamentals-first labs (`lab06a` + `lab06b` + `lab06c`).
+4. `lab17` + `lab18`.
+5. `lab19` + `lab20`.
 
 ## Decision rule: extend vs split
 
@@ -331,6 +360,43 @@ These items deepen each current lab without changing the overall sequence.
 - [ ] Add tests: scenario matrix with deterministic seeds and explicit SLO checks.
 - [ ] Keep out of this lab: randomized chaos/perf long-run harness.
 
+## Foundational depth track (early core path)
+
+Status: `in_progress`
+
+Sequence update (core path):
+
+- `lab01` -> `lab02` -> `lab03` -> `lab04` -> `lab05` -> `lab06` -> `lab06a` -> `lab06b` -> `lab06c` -> `lab07` -> ...
+
+Track goals:
+
+- Make packet/header construction explicit before transport and policy-heavy labs.
+- Make TCP/UDP tuple semantics explicit before ACL/NAT/BGP transport labs.
+- Make subnet/mask/prefix and MAC adjacency reasoning explicit before deeper forwarding pipelines.
+- Introduce deterministic QoS queueing/marking model before advanced service tracks.
+
+Implemented items:
+
+1. `lab06a_packet_construction`
+   - Status: `done`
+   - Deliverables: packet stack ordering validation, VLAN insertion checks, transport-length normalization.
+2. `lab06b_tcp_udp_fundamentals`
+   - Status: `done`
+   - Deliverables: deterministic TCP handshake/close state model, flow tuple extraction, simplified UDP checksum helper.
+3. `lab06c_ip_subnet_mac_forwarding_basics`
+   - Status: `done`
+   - Deliverables: explainable LPM/subnet behavior and MAC-resolution-gated forwarding decisions.
+4. `lab27_qos_marking_queueing`
+   - Status: `done`
+   - Deliverables: DSCP classification, queue admission controls, weighted round-robin scheduler behavior.
+5. `lab21_nat44_pipeline`
+   - Status: `done` (coverage closure)
+   - Deliverables: exercise + edge-case test coverage now both present.
+
+Execution coordination note:
+
+- Keep scaffold/CLI UX restructuring independent from foundational lab work while `/private/tmp/pyCIE-main-sync` remains active.
+
 ## Proposed new labs (`lab17+`)
 
 These are prioritized additions after the current sequence.
@@ -399,6 +465,7 @@ These are prioritized additions after the current sequence.
    - Prereqs: `lab07`, `lab13`.
    - Deliverables: DSCP classification, marking policy, queue service model.
    - Tests: policy classification determinism, queue starvation protection, drop precedence.
+   - Status: `done` (implemented and moved into the early-core foundational depth track).
 
 12. `lab28_segment_routing_basics`
    - Prereqs: `lab15`, `lab23`.

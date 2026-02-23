@@ -12,6 +12,7 @@ from .dhcp import DHCPServer
 from .evpn import EVPNControlPlane
 from .gre import GRETunnelProcess
 from .ikev2_for_ipsec import IKEv2Process
+from .ip_mac_basics import IPMacBasicsProcess
 from .ipsec import IPsecProcess
 from .isis import ISISProcess
 from .ldp import LDPProcess
@@ -21,11 +22,14 @@ from .multicast import MulticastProcess
 from .nat44_pipeline import NAT44Pipeline
 from .ospf import OSPFProcess
 from .ospf_multi_area import OSPFMultiAreaProcess
+from .packet_construction import PacketConstructionProcess
 from .policy import PolicyProcess
+from .qos_marking_queueing import QoSMarkingQueueingProcess, QoSPacket
 from .rib_fib_pipeline import RIBFIBPipeline
 from .rstp import RSTPProcess
 from .stp import STPProcess
 from .switching import LearningSwitch
+from .tcp_udp_fundamentals import TCPConnection, TCPSegment, TCPState, TransportFundamentalsProcess
 from .route_selection import RouteSelectionEngine
 from .vrf import VRFProcess
 from .ipv6_nd_forwarding import IPv6NDForwarder
@@ -45,6 +49,7 @@ __all__ = [
     "EVPNControlPlane",
     "GRETunnelProcess",
     "IKEv2Process",
+    "IPMacBasicsProcess",
     "IPsecProcess",
     "IPv6NDForwarder",
     "ISISProcess",
@@ -58,12 +63,19 @@ __all__ = [
     "OSPFProcess",
     "OSPFMultiAreaProcess",
     "OSPFLSDB",
+    "PacketConstructionProcess",
     "PolicyProcess",
     "ProtocolBase",
+    "QoSMarkingQueueingProcess",
+    "QoSPacket",
     "RIBFIBPipeline",
     "RouteSelectionEngine",
     "RSTPProcess",
     "STPProcess",
+    "TCPConnection",
+    "TCPSegment",
+    "TCPState",
+    "TransportFundamentalsProcess",
     "VRFProcess",
     "VXLANBridge",
 ]

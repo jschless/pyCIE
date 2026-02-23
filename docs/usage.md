@@ -18,11 +18,22 @@ source .venv/bin/activate
 pip install -e .[dev]
 ```
 
+Shortcut:
+
+```bash
+make bootstrap
+```
+
 If the `pycie` command is not on your path, use module mode:
 
 ```bash
 python -m pycie <subcommand>
 ```
+
+For first-time onboarding, use:
+
+- [`docs/getting_started.md`](getting_started.md)
+- [`docs/tutorial/index.md`](tutorial/index.md)
 
 ## CLI Quickstart
 
@@ -48,6 +59,9 @@ Run one lab:
 
 ```bash
 pycie run lab01
+pycie run lab06a
+pycie run lab06b
+pycie run lab06c
 ```
 
 Generate TODO scaffold from reference source:
@@ -116,20 +130,29 @@ pycie scenario run labs/scenarios/lab16_dual_failure.json --report json --report
 
 ### Core protocol sequence
 
-1. `lab01` through `lab21`
+1. `lab01` -> `lab02` -> `lab03` -> `lab04` -> `lab05` -> `lab06` -> `lab06a` -> `lab06b` -> `lab06c` -> `lab07` -> ... -> `lab21`
 2. Then advanced labs (`lab23`, `lab30+`)
 
 ### Router decision internals
 
-1. `lab17_bgp_fsm_transport`
-2. `lab18_ospf_multi_area`
-3. `lab19_ikev2_for_ipsec`
-4. `lab20_ipv6_nd_forwarding`
-5. `lab21_nat44_pipeline`
-6. `lab23_isis`
-7. `lab38_control_plane_databases`
-8. `lab30_route_selection_redistribution`
-9. `lab39_rib_to_fib_pipeline`
+1. `lab06c_ip_subnet_mac_forwarding_basics`
+2. `lab17_bgp_fsm_transport`
+3. `lab18_ospf_multi_area`
+4. `lab19_ikev2_for_ipsec`
+5. `lab20_ipv6_nd_forwarding`
+6. `lab21_nat44_pipeline`
+7. `lab23_isis`
+8. `lab38_control_plane_databases`
+9. `lab30_route_selection_redistribution`
+10. `lab39_rib_to_fib_pipeline`
+
+### QoS and policy track
+
+1. `lab06b_tcp_udp_fundamentals`
+2. `lab06c_ip_subnet_mac_forwarding_basics`
+3. `lab13_bgp_policy`
+4. `lab27_qos_marking_queueing`
+5. `lab31_acl_filtering`
 
 ### Services/security track
 
@@ -219,9 +242,20 @@ python -m pycie labs
 
 ## Next docs
 
+- Start here: `docs/getting_started.md`
+- Textbook tutorial: `docs/tutorial/index.md`
+- Docs site workflow: `docs/docs_site.md`
 - Architecture: `docs/architecture.md`
 - Standards: `docs/standards.md`
 - Visualization: `docs/visualization.md`
 - Lab instructions: `labs/INSTRUCTIONS.md`
 - Roadmap: `docs/roadmap.md`
 - Product TODO: `docs/TODO.md`
+
+## Build docs site locally
+
+```bash
+pip install -e .[docs]
+mkdocs serve
+mkdocs build --strict
+```

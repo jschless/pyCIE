@@ -8,6 +8,7 @@ import importlib.util
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import subprocess
 import sys
@@ -47,7 +48,17 @@ def find_repo_root(start: Path | None = None) -> Path:
 def load_lab_ids(repo_root: Path) -> list[str]:
     """Return sorted lab IDs from capabilities file."""
     raw = json.loads((repo_root / "labs" / "capabilities.json").read_text(encoding="utf-8"))
-    return sorted(raw.keys(), key=lambda lab_id: int(lab_id.removeprefix("lab")))
+    return sorted(raw.keys(), key=_lab_sort_key)
+
+
+def _lab_sort_key(lab_id: str) -> tuple[int, str]:
+    """Sort lab IDs like lab06, lab06a, lab06b, lab07 in deterministic order."""
+    match = re.match(r"^lab(\d+)([a-z]*)$", lab_id)
+    if match is None:
+        return (10_000, lab_id)
+    number = int(match.group(1))
+    suffix = match.group(2)
+    return (number, suffix)
 
 
 def find_lab_readme(repo_root: Path, lab_id: str) -> Path | None:
@@ -340,6 +351,10 @@ def cmd_guide(namespace: argparse.Namespace, repo_root: Path) -> int:
     del namespace
     docs = [
         ("README", repo_root / "README.md"),
+        ("Docs Home", repo_root / "docs" / "index.md"),
+        ("Start Here", repo_root / "docs" / "getting_started.md"),
+        ("Tutorial", repo_root / "docs" / "tutorial" / "index.md"),
+        ("Docs Site", repo_root / "docs" / "docs_site.md"),
         ("Usage Guide", repo_root / "docs" / "usage.md"),
         ("Visualization Guide", repo_root / "docs" / "visualization.md"),
         ("Lab Instructions", repo_root / "labs" / "INSTRUCTIONS.md"),
@@ -367,13 +382,19 @@ def cmd_guide(namespace: argparse.Namespace, repo_root: Path) -> int:
     print("  pycie viz stp --trace traces/lab02.jsonl")
     print("  pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01")
     print("  pycie scenario run labs/scenarios/lab16_dual_failure.json")
+    print("  pip install -e .[docs]")
+    print("  mkdocs serve")
+    print("  mkdocs build --strict")
+    print("  make bootstrap")
+    print("  make run-foundations")
+    print("  make docs-build")
     print("  pycie check")
     return 0
 
 
 def cmd_quickstart(namespace: argparse.Namespace, repo_root: Path) -> int:
     """Print quickstart for first-time users."""
-    del namespace, repo_root
+    del namespace
     print("pyCIE Quickstart")
     print("1) python -m venv .venv")
     print("2) source .venv/bin/activate")
@@ -381,12 +402,16 @@ def cmd_quickstart(namespace: argparse.Namespace, repo_root: Path) -> int:
     print("4) pycie labs")
     print("5) pycie scaffold --labs all")
     print("6) pycie run lab01")
-    print("7) pycie run lab01 --trace-out traces/lab01.jsonl")
-    print("8) pycie viz replay --trace traces/lab01.jsonl --detail packet")
-    print("9) pycie viz topology --trace traces/lab01.jsonl --packet-id p1")
-    print("10) pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01")
-    print("11) pycie scenario run labs/scenarios/lab16_dual_failure.json")
+    print("7) pycie run lab06a")
+    print("8) pycie run lab06b")
+    print("9) pycie run lab06c")
+    print("10) pycie run lab01 --trace-out traces/lab01.jsonl")
+    print("11) pycie viz replay --trace traces/lab01.jsonl --detail packet")
+    print("12) pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01")
+    print("13) pycie scenario run labs/scenarios/lab16_dual_failure.json")
     print()
+    print("Start Here doc:", repo_root / "docs" / "getting_started.md")
+    print("Tutorial map:", repo_root / "docs" / "tutorial" / "index.md")
     print("If pycie command is unavailable, use: python -m pycie <subcommand>")
     return 0
 

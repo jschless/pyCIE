@@ -22,6 +22,15 @@ Note: IEEE standards pages are linked for normative reference. The workbook uses
 - ARP: RFC 826
   - https://datatracker.ietf.org/doc/html/rfc826
 
+## Packet and transport fundamentals
+
+- UDP: RFC 768
+  - https://datatracker.ietf.org/doc/html/rfc768
+- TCP functional specification: RFC 793
+  - https://datatracker.ietf.org/doc/html/rfc793
+- TCP modernized specification: RFC 9293
+  - https://datatracker.ietf.org/doc/html/rfc9293
+
 ## OSPF
 
 - OSPFv2: RFC 2328
@@ -88,6 +97,15 @@ Note: IEEE standards pages are linked for normative reference. The workbook uses
   - https://datatracker.ietf.org/doc/html/rfc2865
 - TACACS+: RFC 8907
   - https://datatracker.ietf.org/doc/html/rfc8907
+
+## QoS and traffic class behavior
+
+- DiffServ architecture: RFC 2475
+  - https://datatracker.ietf.org/doc/html/rfc2475
+- DS field definition: RFC 2474
+  - https://datatracker.ietf.org/doc/html/rfc2474
+- DiffServ service classes: RFC 4594
+  - https://datatracker.ietf.org/doc/html/rfc4594
 
 ## Multicast and overlays
 

@@ -9,6 +9,8 @@ from .headers import (
     IPv4Header,
     IPv6Header,
     MPLSLabel,
+    TCPHeader,
+    UDPHeader,
 )
 from .packet import PacketStack
 from .policy import MatchConditions, PolicyAction, RoutePolicy, RoutePolicyRule
@@ -23,6 +25,8 @@ __all__ = [
     "IPv4Header",
     "IPv6Header",
     "MPLSLabel",
+    "TCPHeader",
+    "UDPHeader",
     "MatchConditions",
     "PacketStack",
     "PolicyAction",

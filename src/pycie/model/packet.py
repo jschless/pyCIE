@@ -5,6 +5,18 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from pycie.model.headers import (
+    Dot1QHeader,
+    EthernetHeader,
+    ESPHeader,
+    GREHeader,
+    IPv4Header,
+    IPv6Header,
+    MPLSLabel,
+    TCPHeader,
+    UDPHeader,
+)
+
 Header = Any
 
 
@@ -50,3 +62,48 @@ class PacketStack:
             payload=self.payload,
             metadata=dict(self.metadata),
         )
+
+    def compute_payload_length(self) -> int:
+        """Return payload length in bytes."""
+        return len(self.payload)
+
+    def validate_stack_order(self) -> tuple[bool, str | None]:
+        """Validate deterministic outer->inner header ordering rules."""
+        if not self.headers:
+            return False, "no_headers"
+
+        previous_rank = -1
+        saw_l3 = False
+        for index, header in enumerate(self.headers):
+            rank = _header_rank(header)
+            if rank < previous_rank:
+                return False, f"invalid_order_at_index_{index}"
+            previous_rank = rank
+
+            if isinstance(header, Dot1QHeader):
+                if index == 0 or not isinstance(self.headers[index - 1], EthernetHeader):
+                    return False, "dot1q_without_outer_ethernet"
+
+            if isinstance(header, (IPv4Header, IPv6Header)):
+                saw_l3 = True
+
+            if isinstance(header, (TCPHeader, UDPHeader)) and not saw_l3:
+                return False, "l4_without_l3"
+
+        return True, None
+
+
+def _header_rank(header: Header) -> int:
+    if isinstance(header, EthernetHeader):
+        return 0
+    if isinstance(header, Dot1QHeader):
+        return 1
+    if isinstance(header, MPLSLabel):
+        return 2
+    if isinstance(header, (IPv4Header, IPv6Header)):
+        return 3
+    if isinstance(header, (GREHeader, ESPHeader)):
+        return 4
+    if isinstance(header, (TCPHeader, UDPHeader)):
+        return 5
+    return 99
