@@ -8,6 +8,186 @@ Scope:
 - Add realism in small steps inside a lab.
 - Split into a new lab only when state model or protocol surface changes materially.
 
+## Roadmap Ownership Policy (effective February 23, 2026)
+
+- `docs/roadmap.md` is the single source of truth for planning and prioritization.
+- `docs/TODO.md` should remain a lightweight pointer, not a second backlog.
+- Every sprint item should include:
+  - clear deliverables
+  - acceptance criteria
+  - completion status (`planned`, `in_progress`, `done`)
+
+## Current Product Gaps (highest impact)
+
+These are now the highest-value gaps relative to current protocol breadth:
+
+1. Interactive visualization UX (single-pane "watch it happen" flow).
+2. Scenario-driven learning loops (guided failure/reconvergence stories).
+3. Realism progression model per lab (`simplified -> realistic` ladder).
+4. Contributor scaling and metadata drift prevention.
+
+## 90-Day Execution Plan (February 23, 2026 to May 24, 2026)
+
+This plan is execution-first and acceptance-driven. If capacity is limited, follow the "highest ROI order" section below.
+
+### Sprint 0: Roadmap Hygiene (February 23 to March 1, 2026)
+
+Status: `planned`
+
+Deliverables:
+
+- Consolidate roadmap and TODO ownership policy into this file.
+- Mark already-completed visualization/CLI capabilities.
+- Add status + acceptance criteria pattern for upcoming sprint blocks.
+
+Acceptance criteria:
+
+- `docs/roadmap.md` contains dated sprint plan and priorities.
+- `docs/TODO.md` no longer duplicates backlog content.
+- Team can answer "what is next" from one file only.
+
+### Sprint 1: Visualization v2 (March 2 to March 22, 2026)
+
+Status: `planned`
+
+Deliverables:
+
+- Add `pycie viz web` command to generate a local static HTML viewer from trace JSONL.
+- Viewer includes:
+  - topology pane
+  - packet decode pane (RFC-style field display)
+  - timeline scrubber with event selection
+- Keep existing CLI visualization paths as backend-compatible data sources.
+
+Acceptance criteria:
+
+- `pycie viz web --trace <file> --out <dir>` generates viewable assets offline.
+- Viewer supports node/layer/packet filters and timeline scrubbing.
+- At least one contract test validates generation and basic artifact integrity.
+- Documentation includes quickstart examples and troubleshooting.
+
+Issue-sized backlog (execution order):
+
+1. `VIZ-01` CLI entrypoint and argument validation
+   - Scope: implement `pycie viz web` command plumbing, `--trace`, `--out`, and clear input error messages.
+   - Done when: invalid args fail fast, valid args create output directory scaffold.
+   - Status: `planned`
+2. `VIZ-02` Trace normalization adapter
+   - Scope: convert existing trace JSONL/events into a stable viewer schema (`topology`, `events`, `packets`).
+   - Done when: adapter emits deterministic JSON for identical traces.
+   - Depends on: `VIZ-01`
+   - Status: `planned`
+3. `VIZ-03` Static viewer shell
+   - Scope: add `index.html`, `styles.css`, `viewer.js`, and local asset loader without external network dependencies.
+   - Done when: viewer opens directly from filesystem and loads normalized data.
+   - Depends on: `VIZ-02`
+   - Status: `planned`
+4. `VIZ-04` Topology pane
+   - Scope: render nodes/links with selected-event highlighting and legend.
+   - Done when: selecting events updates highlighted topology state.
+   - Depends on: `VIZ-03`
+   - Status: `planned`
+5. `VIZ-05` Packet decode pane
+   - Scope: render RFC-like field/value view for selected packet and protocol layer.
+   - Done when: field tree updates on event select and handles missing fields gracefully.
+   - Depends on: `VIZ-03`
+   - Status: `planned`
+6. `VIZ-06` Timeline scrubber
+   - Scope: implement scrub/play/pause controls and event index synchronization.
+   - Done when: timeline position and selected event stay consistent during manual scrub and playback.
+   - Depends on: `VIZ-03`
+   - Status: `planned`
+7. `VIZ-07` Filter pipeline
+   - Scope: add node, layer, and packet-type filters with combined predicate logic.
+   - Done when: filtered timeline/event list is deterministic and reversible.
+   - Depends on: `VIZ-04`, `VIZ-05`, `VIZ-06`
+   - Status: `planned`
+8. `VIZ-08` Contract and regression tests
+   - Scope: add CLI contract test for artifact generation and one deterministic fixture test for normalized schema.
+   - Done when: tests run in CI and fail on schema drift.
+   - Depends on: `VIZ-01`, `VIZ-02`, `VIZ-03`
+   - Status: `planned`
+9. `VIZ-09` Docs quickstart and troubleshooting
+   - Scope: document command usage, output structure, common failures, and recovery steps.
+   - Done when: README/docs can be followed from clean checkout to working viewer.
+   - Depends on: `VIZ-08`
+   - Status: `planned`
+
+### Sprint 2: Scenario Engine (March 23 to April 12, 2026)
+
+Status: `planned`
+
+Deliverables:
+
+- Add scenario execution command group:
+  - `pycie scenario run <scenario-file>`
+  - optional report export (`--report <json|md>`)
+- Support action scheduling (fail/recover events) with deterministic ordering.
+- Support expected convergence assertions and structured failure reports.
+
+Acceptance criteria:
+
+- Scenario run returns non-zero exit status on failed expectations.
+- At least two canonical scenario fixtures pass in CI.
+- Failure output includes actionable reason + selector context.
+
+### Sprint 3: Protocol Depth A (April 13 to May 3, 2026)
+
+Status: `planned`
+
+Deliverables:
+
+- Implement `lab17_bgp_fsm_transport`.
+- Implement `lab18_ospf_multi_area`.
+- Add full README guidance, capabilities wiring, exercise tests, and edge-case tests.
+
+Acceptance criteria:
+
+- Both labs are runnable via `pycie run lab17` and `pycie run lab18`.
+- Both have deterministic exercise and edge-case coverage.
+- Existing lab suites remain green.
+
+### Sprint 4: Protocol Depth B (May 4 to May 24, 2026)
+
+Status: `planned`
+
+Deliverables:
+
+- Implement `lab19_ikev2_for_ipsec`.
+- Implement `lab20_ipv6_nd_forwarding`.
+- Implement `lab21_nat44_pipeline`.
+- Add lab docs, capabilities, exercise tests, and edge-case tests.
+
+Acceptance criteria:
+
+- All three labs are runnable through CLI and pytest markers.
+- Basic scenario coverage exists for at least one integration path (IPsec or NAT).
+- No regressions in existing exercise suites.
+
+### Cross-cutting track: Pedagogy and UX (May 11 to May 24, 2026)
+
+Status: `planned`
+
+Deliverables:
+
+- Add failure explainer command:
+  - `pycie explain <failed-test-or-lab>`
+- Add per-lab metadata for:
+  - advanced challenge flags
+  - prerequisite hints
+
+Acceptance criteria:
+
+- Explain command maps common failures to remediation hints.
+- Lab docs/CLI surface prerequisite and challenge metadata consistently.
+
+## Highest ROI Order (if scope must be reduced)
+
+1. `viz web` experience.
+2. Scenario/failure story tooling.
+3. `lab17` + `lab18`.
+4. `lab19` + `lab20`.
+
 ## Decision rule: extend vs split
 
 Keep in the same lab when all are true:
