@@ -37,7 +37,7 @@ Then use the CLI:
 pycie quickstart
 pycie labs
 pycie scaffold --labs all
-pycie run lab01 --student-src dist/student/src
+pycie run lab01
 pycie run lab01 --trace-out traces/lab01.jsonl
 pycie viz replay --trace traces/lab01.jsonl --detail packet
 pycie viz topology --trace traces/lab01.jsonl --packet-id p1
@@ -55,10 +55,12 @@ python -m pycie labs
 - `pycie labs`: list available labs and README paths
 - `pycie show <labXX>`: show details for one lab
 - `pycie run <labXX>`: run one lab's exercise tests
-- `pycie run <labXX> --student-src <dir>`: run tests against generated student scaffold source
 - `pycie run <labXX> --trace-out <file>`: run lab and capture telemetry JSONL
 - `pycie run all`: run all exercise tests
-- `pycie scaffold --labs <list|all>`: generate TODO-only student scaffold under `dist/student/src/pycie` by default
+- `pycie scaffold --labs <list|all>`: apply TODO scaffold to `src/pycie` (in place) by default
+- `pycie restore`: restore solved source from `dist/reference/src/pycie`
+- `pycie restore --labs <list>`: restore solved files for specific labs only
+- `pycie run <labXX> --student-src <dir>`: optional alternate source root for advanced workflows
 - `pycie check`: run contract tests only
 - `pycie guide`: print key docs and recommended commands
 - `pycie quickstart`: print first-run setup steps
@@ -139,7 +141,8 @@ pytest -m exercise
 
 ```bash
 pycie scaffold --labs all
-pycie run lab01 --student-src dist/student/src
+pycie run lab01
+pycie restore
 ```
 
 ### Fresh-clone student mode (blank labs)
@@ -149,6 +152,20 @@ If you want blank TODO labs after cloning:
 
 ```bash
 pycie scaffold --labs all
+pycie run lab01
+```
+
+This snapshots solved code to `dist/reference/src/pycie` automatically, so you can restore later:
+
+```bash
+pycie restore
+pycie restore --labs lab01,lab07
+```
+
+Optional out-of-tree scaffold:
+
+```bash
+pycie scaffold --labs all --output dist/student/src/pycie
 pycie run lab01 --student-src dist/student/src
 ```
 

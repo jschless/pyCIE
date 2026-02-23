@@ -43,7 +43,8 @@ Goal: users can discover, run, and navigate labs without knowing repo internals.
 
 - [x] Add `pycie labs`, `pycie show`, `pycie run`, `pycie check`, `pycie guide`, `pycie quickstart`.
 - [ ] Add `pycie run --trace` after trace MVP lands.
-- [ ] Add `pycie run --student-src <path>` for scaffold workflows.
+- [x] Add `pycie run --student-src <path>` for scaffold workflows.
+- [x] Make `pycie scaffold` apply TODOs in-place with `pycie restore` for solved reference.
 - [ ] Add richer output formatting (pass/fail summary and next action hints).
 - [ ] Add shell completion script generation.
 

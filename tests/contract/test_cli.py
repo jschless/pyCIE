@@ -71,8 +71,25 @@ def test_build_parser_accepts_scaffold_defaults() -> None:
     namespace = parser.parse_args(["scaffold"])
 
     assert namespace.labs == "all"
-    assert namespace.output == Path("dist/student/src/pycie")
+    assert namespace.output == Path("src/pycie")
+    assert namespace.reference_output == Path("dist/reference/src/pycie")
+    assert namespace.no_reference_snapshot is False
     assert namespace.strict is False
+
+
+def test_build_parser_accepts_restore_defaults() -> None:
+    parser = build_parser()
+    namespace = parser.parse_args(["restore"])
+
+    assert namespace.reference == Path("dist/reference/src/pycie")
+    assert namespace.labs == "all"
+
+
+def test_build_parser_accepts_restore_labs_selector() -> None:
+    parser = build_parser()
+    namespace = parser.parse_args(["restore", "--labs", "lab01,lab07"])
+
+    assert namespace.labs == "lab01,lab07"
 
 
 def test_cli_main_scaffold_invokes_generator(
@@ -104,3 +121,89 @@ def test_cli_main_scaffold_invokes_generator(
     assert "--output" in cmd
     assert str(output.resolve()) in cmd
     assert "Use for lab runs: pycie run lab01 --student-src" in out
+
+
+def test_cli_main_scaffold_in_place_snapshots_reference(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    repo_root: Path,
+) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_replace_tree(source: Path, destination: Path) -> None:
+        captured["source"] = source
+        captured["destination"] = destination
+
+    def fake_run(cmd, cwd=None):
+        captured["cmd"] = cmd
+        captured["cwd"] = cwd
+        return subprocess.CompletedProcess(cmd, 0)
+
+    monkeypatch.setattr("pycie.cli.replace_tree", fake_replace_tree)
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.chdir(repo_root)
+
+    exit_code = main(["scaffold"])
+    out = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert captured["cwd"] == repo_root
+    assert captured["source"] == (repo_root / "src" / "pycie").resolve()
+    assert captured["destination"] == (repo_root / "dist" / "reference" / "src" / "pycie").resolve()
+    cmd = captured["cmd"]
+    assert isinstance(cmd, list)
+    assert "--input" in cmd
+    assert str((repo_root / "dist" / "reference" / "src" / "pycie").resolve()) in cmd
+    assert "--output" in cmd
+    assert str((repo_root / "src" / "pycie").resolve()) in cmd
+    assert "Restore solved source with: pycie restore" in out
+    assert "Use for lab runs: pycie run lab01" in out
+
+
+def test_cli_main_restore_labs_restores_selected_files(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    repo_root: Path,
+    tmp_path: Path,
+) -> None:
+    reference = tmp_path / "reference" / "src" / "pycie"
+    source_file = reference / "forwarding" / "l3.py"
+    source_file.parent.mkdir(parents=True, exist_ok=True)
+    source_file.write_text("# solved", encoding="utf-8")
+
+    copied: list[tuple[Path, Path]] = []
+
+    def fake_copy2(source: Path, destination: Path) -> None:
+        copied.append((Path(source), Path(destination)))
+
+    monkeypatch.setattr("pycie.cli.load_scaffold_target_files", lambda _: {"lab07": {Path("forwarding/l3.py")}})
+    monkeypatch.setattr("pycie.cli.shutil.copy2", fake_copy2)
+    monkeypatch.chdir(repo_root)
+
+    exit_code = main(["restore", "--reference", str(reference), "--labs", "lab07"])
+    out = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert len(copied) == 1
+    assert copied[0][0] == source_file.resolve()
+    assert copied[0][1] == (repo_root / "src" / "pycie" / "forwarding" / "l3.py").resolve()
+    assert "Restored 1 file(s) for labs: lab07" in out
+
+
+def test_cli_main_restore_labs_rejects_unknown_lab(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    repo_root: Path,
+    tmp_path: Path,
+) -> None:
+    reference = tmp_path / "reference" / "src" / "pycie"
+    reference.mkdir(parents=True, exist_ok=True)
+
+    monkeypatch.setattr("pycie.cli.load_scaffold_target_files", lambda _: {"lab07": {Path("forwarding/l3.py")}})
+    monkeypatch.chdir(repo_root)
+
+    exit_code = main(["restore", "--reference", str(reference), "--labs", "lab99"])
+    err = capsys.readouterr().err
+
+    assert exit_code == 2
+    assert "Unknown labs in --labs" in err

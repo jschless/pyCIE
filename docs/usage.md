@@ -56,9 +56,23 @@ Generate TODO scaffold from reference source:
 pycie scaffold --labs all
 ```
 
-Run one lab against student scaffold source:
+Run one lab:
 
 ```bash
+pycie run lab01
+```
+
+Restore solved source after scaffolding:
+
+```bash
+pycie restore
+pycie restore --labs lab01,lab07
+```
+
+Optional out-of-tree scaffold workflow:
+
+```bash
+pycie scaffold --labs all --output dist/student/src/pycie
 pycie run lab01 --student-src dist/student/src
 ```
 
@@ -139,16 +153,29 @@ Generate student TODO scaffold:
 pycie scaffold --labs all
 ```
 
-Run tests against scaffold path:
+Run tests directly:
 
 ```bash
-pycie run lab01 --student-src dist/student/src
+pycie run lab01
 ```
 
 ### Fresh clone behavior
 
 `main` ships with reference solutions. If you run `pycie run lab01` directly in a fresh clone, tests run against solved source.
-To force TODO-based student work, always generate scaffold first and run with `--student-src`.
+To force TODO-based student work, run `pycie scaffold --labs all` first.
+By default, this writes TODO scaffolding into `src/pycie` and snapshots solved code to `dist/reference/src/pycie`.
+
+Restore solved source any time:
+
+```bash
+pycie restore
+```
+
+Restore only selected labs:
+
+```bash
+pycie restore --labs lab01,lab07
+```
 
 ## Repo map
 

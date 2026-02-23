@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import argparse
 import difflib
+import importlib.util
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
+import tempfile
 from typing import Sequence, TypeVar
 
 from pycie.telemetry.events import EventType, Layer
@@ -24,6 +27,9 @@ from pycie.telemetry.render import (
 from pycie.telemetry.trace import TRACE_OUT_ENV, load_trace_events
 
 EnumType = TypeVar("EnumType", Layer, EventType)
+
+DEFAULT_SCAFFOLD_OUTPUT = Path("src/pycie")
+DEFAULT_REFERENCE_OUTPUT = Path("dist/reference/src/pycie")
 
 
 def find_repo_root(start: Path | None = None) -> Path:
@@ -91,6 +97,57 @@ def run_pytest(
     return int(completed.returncode)
 
 
+def replace_tree(source: Path, destination: Path) -> None:
+    """Replace destination directory with an exact copy of source."""
+    if destination.exists():
+        shutil.rmtree(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source, destination)
+
+
+def parse_lab_spec(spec: str, known_labs: set[str], *, option_name: str) -> set[str]:
+    """Parse all/comma-separated lab selectors with validation."""
+    normalized = spec.strip().lower()
+    if normalized == "all":
+        return set(known_labs)
+
+    selected = {item.strip() for item in spec.split(",") if item.strip()}
+    if not selected:
+        raise ValueError(f"{option_name} cannot be empty; use 'all' or comma-separated lab ids")
+
+    unknown = sorted(selected - known_labs)
+    if unknown:
+        raise ValueError(f"Unknown labs in {option_name}: {', '.join(unknown)}")
+    return selected
+
+
+def load_scaffold_target_files(repo_root: Path) -> dict[str, set[Path]]:
+    """Load lab->file mappings from scaffold target configuration."""
+    scaffold_script = (repo_root / "tools" / "make_student_scaffold.py").resolve()
+    if not scaffold_script.exists():
+        raise FileNotFoundError(f"Missing scaffold generator: {scaffold_script}")
+
+    spec = importlib.util.spec_from_file_location("_pycie_scaffold_targets", scaffold_script)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load scaffold generator: {scaffold_script}")
+
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    targets = getattr(module, "TARGETS", None)
+    if targets is None:
+        raise RuntimeError("Scaffold generator is missing TARGETS metadata")
+
+    by_lab: dict[str, set[Path]] = {}
+    for target in targets:
+        lab = getattr(target, "lab", None)
+        rel_path = getattr(target, "rel_path", None)
+        if not isinstance(lab, str) or not isinstance(rel_path, str):
+            continue
+        by_lab.setdefault(lab, set()).add(Path(rel_path))
+    return by_lab
+
+
 def cmd_labs(namespace: argparse.Namespace, repo_root: Path) -> int:
     """List available labs with README path hints."""
     del namespace
@@ -141,13 +198,32 @@ def cmd_scaffold(namespace: argparse.Namespace, repo_root: Path) -> int:
     """Generate a student TODO scaffold from reference implementation."""
     output = namespace.output.expanduser().resolve()
     input_src = (repo_root / "src" / "pycie").resolve()
+    reference_output = namespace.reference_output.expanduser().resolve()
     script = (repo_root / "tools" / "make_student_scaffold.py").resolve()
+    in_place = output == input_src
+    scaffold_input = input_src
+    reference_snapshotted = False
+    temp_dir: tempfile.TemporaryDirectory[str] | None = None
+
+    if in_place:
+        if not namespace.no_reference_snapshot:
+            if reference_output == output:
+                print("--reference-output cannot match --output when scaffolding in place", file=sys.stderr)
+                return 2
+            replace_tree(input_src, reference_output)
+            scaffold_input = reference_output
+            reference_snapshotted = True
+        else:
+            temp_dir = tempfile.TemporaryDirectory(prefix="pycie-scaffold-")
+            temp_input = Path(temp_dir.name) / "pycie"
+            shutil.copytree(input_src, temp_input)
+            scaffold_input = temp_input
 
     cmd = [
         sys.executable,
         str(script),
         "--input",
-        str(input_src),
+        str(scaffold_input),
         "--output",
         str(output),
         "--labs",
@@ -157,13 +233,63 @@ def cmd_scaffold(namespace: argparse.Namespace, repo_root: Path) -> int:
         cmd.append("--strict")
 
     print("Running:", " ".join(cmd))
-    completed = subprocess.run(cmd, cwd=repo_root)
-    if completed.returncode != 0:
-        return int(completed.returncode)
+    try:
+        completed = subprocess.run(cmd, cwd=repo_root)
+        if completed.returncode != 0:
+            return int(completed.returncode)
+    finally:
+        if temp_dir is not None:
+            temp_dir.cleanup()
 
-    student_src = output.parent
     print(f"Scaffold generated: {output}")
-    print(f"Use for lab runs: pycie run lab01 --student-src {student_src}")
+    if in_place:
+        if reference_snapshotted:
+            print(f"Reference snapshot: {reference_output}")
+            print("Restore solved source with: pycie restore")
+        print("Use for lab runs: pycie run lab01")
+    else:
+        student_src = output.parent
+        print(f"Use for lab runs: pycie run lab01 --student-src {student_src}")
+    return 0
+
+
+def cmd_restore(namespace: argparse.Namespace, repo_root: Path) -> int:
+    """Restore in-place source tree from a saved reference snapshot."""
+    reference = namespace.reference.expanduser().resolve()
+    target = (repo_root / "src" / "pycie").resolve()
+
+    if not reference.exists():
+        print(f"Reference snapshot not found: {reference}", file=sys.stderr)
+        return 1
+    if reference == target:
+        print("Reference snapshot path cannot equal src/pycie", file=sys.stderr)
+        return 2
+
+    if namespace.labs.strip().lower() == "all":
+        replace_tree(reference, target)
+        print(f"Restored source tree: {target}")
+        return 0
+
+    targets_by_lab = load_scaffold_target_files(repo_root)
+    selected_labs = parse_lab_spec(namespace.labs, set(targets_by_lab.keys()), option_name="--labs")
+
+    restored_files: set[Path] = set()
+    for lab_id in sorted(selected_labs):
+        for rel_path in sorted(targets_by_lab[lab_id], key=lambda item: item.as_posix()):
+            source_path = reference / rel_path
+            if not source_path.exists():
+                print(f"Reference file missing for {lab_id}: {source_path}", file=sys.stderr)
+                return 1
+            destination_path = target / rel_path
+            destination_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source_path, destination_path)
+            restored_files.add(rel_path)
+
+    labs_display = ", ".join(sorted(selected_labs))
+    print(f"Restored {len(restored_files)} file(s) for labs: {labs_display}")
+    print(f"Reference snapshot: {reference}")
+    print(f"Target source tree: {target}")
+    print("Use this to run tests: pycie run lab01")
     return 0
 
 
@@ -194,6 +320,8 @@ def cmd_guide(namespace: argparse.Namespace, repo_root: Path) -> int:
     print("  pycie labs")
     print("  pycie scaffold --labs all")
     print("  pycie run lab01")
+    print("  pycie restore")
+    print("  pycie scaffold --labs all --output dist/student/src/pycie")
     print("  pycie run lab01 --student-src dist/student/src")
     print("  pycie run lab01 --trace-out traces/lab01.jsonl")
     print("  pycie viz replay --trace traces/lab01.jsonl --detail packet")
@@ -214,7 +342,7 @@ def cmd_quickstart(namespace: argparse.Namespace, repo_root: Path) -> int:
     print("3) pip install -e .[dev]")
     print("4) pycie labs")
     print("5) pycie scaffold --labs all")
-    print("6) pycie run lab01 --student-src dist/student/src")
+    print("6) pycie run lab01")
     print("7) pycie run lab01 --trace-out traces/lab01.jsonl")
     print("8) pycie viz replay --trace traces/lab01.jsonl --detail packet")
     print("9) pycie viz topology --trace traces/lab01.jsonl --packet-id p1")
@@ -357,8 +485,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_scaffold.add_argument(
         "--output",
         type=Path,
-        default=Path("dist/student/src/pycie"),
-        help="Output scaffold package path (default: dist/student/src/pycie)",
+        default=DEFAULT_SCAFFOLD_OUTPUT,
+        help="Output scaffold package path (default: src/pycie)",
+    )
+    p_scaffold.add_argument(
+        "--reference-output",
+        type=Path,
+        default=DEFAULT_REFERENCE_OUTPUT,
+        help="Reference snapshot path used for in-place scaffold (default: dist/reference/src/pycie)",
+    )
+    p_scaffold.add_argument(
+        "--no-reference-snapshot",
+        action="store_true",
+        help="Do not save solved source snapshot before in-place scaffold",
     )
     p_scaffold.add_argument(
         "--strict",
@@ -366,6 +505,20 @@ def build_parser() -> argparse.ArgumentParser:
         help="Fail if configured scaffold targets are missing",
     )
     p_scaffold.set_defaults(func=cmd_scaffold)
+
+    p_restore = subparsers.add_parser("restore", help="Restore src/pycie from reference snapshot")
+    p_restore.add_argument(
+        "--reference",
+        type=Path,
+        default=DEFAULT_REFERENCE_OUTPUT,
+        help="Reference snapshot path (default: dist/reference/src/pycie)",
+    )
+    p_restore.add_argument(
+        "--labs",
+        default="all",
+        help="Comma-separated labs to restore (default: all)",
+    )
+    p_restore.set_defaults(func=cmd_restore)
 
     p_check = subparsers.add_parser("check", help="Run contract tests")
     p_check.set_defaults(func=cmd_check)
