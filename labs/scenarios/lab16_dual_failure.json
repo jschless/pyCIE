@@ -19,9 +19,24 @@
       "params": {"a": "pe1:eth0", "b": "p1:eth0"}
     },
     {
+      "at_ms": 1100,
+      "action": "route_set_absent",
+      "params": {"selector": "node=pe1,prefix=10.200.2.0/24,vrf=CUST_A"}
+    },
+    {
       "at_ms": 1300,
       "action": "fail_bgp_peer",
       "params": {"node": "pe1", "peer": "pe2"}
+    },
+    {
+      "at_ms": 2650,
+      "action": "route_set_present",
+      "params": {"selector": "node=pe1,prefix=10.200.2.0/24,vrf=CUST_A"}
+    },
+    {
+      "at_ms": 2700,
+      "action": "mark_converged",
+      "params": {}
     }
   ],
   "expectations": [
@@ -35,5 +50,10 @@
       "selector": "fabric",
       "expected": 2000
     }
-  ]
+  ],
+  "metadata": {
+    "initial_routes": {
+      "node=pe1,prefix=10.200.2.0/24,vrf=CUST_A": true
+    }
+  }
 }

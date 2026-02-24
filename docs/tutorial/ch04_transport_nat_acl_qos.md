@@ -21,11 +21,19 @@ Policy and service behavior depends on transport metadata and deterministic rule
 ## Hands-on sequence
 
 ```bash
-pycie run lab21
-pycie run lab31
-pycie run lab27
+pycie run lab21 --student-src dist/student/src
+pycie run lab31 --student-src dist/student/src
+pycie run lab27 --student-src dist/student/src
 ```
 
 ## Checkpoint
 
 You should be able to trace one packet through classification, policy, translation, and queueing decisions without ambiguity.
+
+## Chapter navigation
+
+<div class="chapter-nav">
+  <a href="../">Course Map</a>
+  <a href="../ch03_l3_and_addressing/">Previous: Chapter 3</a>
+  <a href="../ch05_control_plane_depth/">Next: Chapter 5</a>
+</div>

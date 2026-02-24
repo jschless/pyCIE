@@ -3,9 +3,21 @@ site_description: Learn networking by implementing protocols in Python.
 
 theme:
   name: material
+  palette:
+    - scheme: default
+      primary: teal
+      accent: amber
   features:
+    - navigation.tabs
     - navigation.sections
     - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - navigation.instant
+    - navigation.tracking
+    - toc.follow
+    - search.suggest
+    - search.highlight
     - content.code.copy
 
 docs_dir: docs
@@ -31,5 +43,10 @@ nav:
 
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
   - toc:
       permalink: true
+
+extra_css:
+  - assets/stylesheets/extra.css

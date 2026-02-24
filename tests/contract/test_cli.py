@@ -66,6 +66,22 @@ def test_cli_main_rejects_unknown_lab(monkeypatch: pytest.MonkeyPatch, capsys: p
     assert "Unknown lab id" in err
 
 
+def test_cli_main_run_warns_when_using_reference_source(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    repo_root: Path,
+) -> None:
+    monkeypatch.setattr("pycie.cli.is_likely_student_scaffold", lambda _src: False)
+    monkeypatch.setattr("pycie.cli.run_pytest", lambda *_args, **_kwargs: 0)
+    monkeypatch.chdir(repo_root)
+
+    exit_code = main(["run", "lab01"])
+    err = capsys.readouterr().err
+
+    assert exit_code == 0
+    assert "running against solved reference source" in err
+
+
 def test_build_parser_accepts_student_src_on_run() -> None:
     parser = build_parser()
     namespace = parser.parse_args(["run", "lab01", "--student-src", "dist/student/src"])
@@ -79,7 +95,8 @@ def test_build_parser_accepts_scaffold_defaults() -> None:
     namespace = parser.parse_args(["scaffold"])
 
     assert namespace.labs == "all"
-    assert namespace.output == Path("src/pycie")
+    assert namespace.output == Path("dist/student/src/pycie")
+    assert namespace.in_place is False
     assert namespace.reference_output == Path("dist/reference/src/pycie")
     assert namespace.no_reference_snapshot is False
     assert namespace.strict is False
@@ -178,7 +195,7 @@ def test_cli_main_scaffold_in_place_snapshots_reference(
     monkeypatch.setattr(subprocess, "run", fake_run)
     monkeypatch.chdir(repo_root)
 
-    exit_code = main(["scaffold"])
+    exit_code = main(["scaffold", "--in-place"])
     out = capsys.readouterr().out
 
     assert exit_code == 0
@@ -193,6 +210,20 @@ def test_cli_main_scaffold_in_place_snapshots_reference(
     assert str((repo_root / "src" / "pycie").resolve()) in cmd
     assert "Restore solved source with: pycie restore" in out
     assert "Use for lab runs: pycie run lab01" in out
+
+
+def test_cli_main_scaffold_rejects_in_place_without_flag(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    repo_root: Path,
+) -> None:
+    monkeypatch.chdir(repo_root)
+
+    exit_code = main(["scaffold", "--output", "src/pycie"])
+    err = capsys.readouterr().err
+
+    assert exit_code == 2
+    assert "Refusing in-place scaffold without --in-place" in err
 
 
 def test_cli_main_restore_labs_restores_selected_files(

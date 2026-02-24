@@ -19,8 +19,8 @@ Before routing, policy, or security, you need to understand how packets are asse
 ## Hands-on sequence
 
 ```bash
-pycie run lab06a
-pycie run lab06b
+pycie run lab06a --student-src dist/student/src
+pycie run lab06b --student-src dist/student/src
 pytest -m "lab06a and exercise"
 pytest -m "lab06b and exercise"
 ```
@@ -32,3 +32,10 @@ You should be able to explain:
 1. Why a TCP or UDP header without an L3 header is invalid.
 2. Why deterministic header ordering is required for reproducible tests.
 3. How a transport 5-tuple is derived and used later by ACL/NAT/QoS.
+
+## Chapter navigation
+
+<div class="chapter-nav">
+  <a href="../">Course Map</a>
+  <a href="../ch02_switching_and_stp/">Next: Chapter 2</a>
+</div>

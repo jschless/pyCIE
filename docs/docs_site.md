@@ -5,7 +5,7 @@ This repository uses MkDocs to render documentation as a navigable site.
 ## Local preview
 
 ```bash
-pip install -e .[docs]
+pip install -e '.[docs]'
 mkdocs serve
 ```
 

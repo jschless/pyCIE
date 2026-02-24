@@ -49,3 +49,18 @@ def test_runner_reports_expectation_failures() -> None:
     result = runner.run(scenario)
     assert not result.passed
     assert result.failures
+
+
+def test_runner_convergence_expectation_fails_when_unconverged() -> None:
+    runner = ScenarioRunner(capability_matrix=_matrix())
+    scenario = Scenario(
+        name="unconverged",
+        lab_id="lab16",
+        topology=TopologySpec(nodes=("r1", "r2"), links=(("r1:eth0", "r2:eth0"),)),
+        actions=[ScenarioAction(at_ms=100, action="fail_link", params={"a": "r1:eth0", "b": "r2:eth0"})],
+        expectations=[Expectation(kind="convergence_ms_lte", selector="fabric", expected=500)],
+    )
+
+    result = runner.run(scenario)
+    assert not result.passed
+    assert any("actual=unconverged" in failure for failure in result.failures)

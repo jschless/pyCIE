@@ -2,7 +2,7 @@
 
 bootstrap:
 	python -m venv .venv
-	. .venv/bin/activate && pip install -e .[dev]
+	. .venv/bin/activate && pip install -e '.[dev]'
 
 check:
 	pytest -q
@@ -19,7 +19,7 @@ run-foundations:
 	PYTHONPATH=src python -m pycie run lab06c
 
 docs-install:
-	. .venv/bin/activate && pip install -e .[docs]
+	. .venv/bin/activate && pip install -e '.[docs]'
 
 docs-serve:
 	. .venv/bin/activate && mkdocs serve
