@@ -32,8 +32,8 @@ python -m pycie <subcommand>
 
 For first-time onboarding, use:
 
-- [`docs/getting_started.md`](getting_started.md)
-- [`docs/tutorial/index.md`](tutorial/index.md)
+- [`docs/getting_started.md`](getting_started)
+- [`docs/tutorial/index.md`](tutorial/index)
 
 ## CLI Quickstart
 
@@ -263,6 +263,6 @@ python -m pycie labs
 
 ```bash
 pip install -e '.[docs]'
-mkdocs serve
-mkdocs build --strict
+sphinx-autobuild docs docs/_build/dirhtml
+sphinx-build -W -b dirhtml docs docs/_build/dirhtml
 ```

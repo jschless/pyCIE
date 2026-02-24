@@ -1,12 +1,12 @@
 # Docs Site and GitHub Pages
 
-This repository uses MkDocs to render documentation as a navigable site.
+This repository uses Sphinx + MyST to render documentation as a navigable textbook-style site.
 
 ## Local preview
 
 ```bash
 pip install -e '.[docs]'
-mkdocs serve
+sphinx-autobuild docs docs/_build/dirhtml
 ```
 
 With `Makefile` shortcuts:
@@ -16,12 +16,12 @@ make docs-install
 make docs-serve
 ```
 
-Open the local URL printed by MkDocs (typically `http://127.0.0.1:8000`).
+Open the local URL printed by Sphinx Autobuild (typically `http://127.0.0.1:8000`).
 
 ## Strict build
 
 ```bash
-mkdocs build --strict
+sphinx-build -W -b dirhtml docs docs/_build/dirhtml
 ```
 
 or:
@@ -30,7 +30,7 @@ or:
 make docs-build
 ```
 
-Use strict mode before opening a PR to catch broken links and bad nav references.
+Use `-W` before opening a PR so warnings fail the build (broken links, unresolved refs, and nav issues).
 
 ## GitHub Pages deployment
 
@@ -48,12 +48,14 @@ Behavior:
 - Keep architecture and standards as supporting references
 - Link each chapter to specific lab IDs and expected outcomes
 
-## Sphinx alternative
+## Core Sphinx files
 
-If you later want full API autodoc and tighter Python-domain directives, you can migrate this structure to Sphinx.
+- `docs/conf.py`: theme/extensions/options
+- `docs/index.md`: landing page + site toctree
+- `docs/tutorial/index.md`: chapter map + tutorial toctree
 
-Suggested migration path:
+## Why this stack
 
-1. Keep chapter markdown under `docs/tutorial/`.
-2. Use MyST in Sphinx to preserve markdown sources.
-3. Move CI workflow from `mkdocs build --strict` to `sphinx-build -W`.
+- MyST keeps markdown authoring simple.
+- Sphinx gives durable cross-references and warning-strict builds.
+- Book theme provides chapter navigation and textbook ergonomics.

@@ -22,7 +22,7 @@ docs-install:
 	. .venv/bin/activate && pip install -e '.[docs]'
 
 docs-serve:
-	. .venv/bin/activate && mkdocs serve
+	. .venv/bin/activate && sphinx-autobuild docs docs/_build/dirhtml
 
 docs-build:
-	. .venv/bin/activate && mkdocs build --strict
+	. .venv/bin/activate && sphinx-build -W -b dirhtml docs docs/_build/dirhtml

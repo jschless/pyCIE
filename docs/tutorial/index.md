@@ -4,6 +4,18 @@ This tutorial is structured as a textbook path, not a command reference.
 
 Each chapter maps to concrete labs and expected outcomes.
 
+```{toctree}
+:maxdepth: 1
+:hidden:
+
+ch01_packet_construction
+ch02_switching_and_stp
+ch03_l3_and_addressing
+ch04_transport_nat_acl_qos
+ch05_control_plane_depth
+ch06_overlays_and_security
+```
+
 <div class="link-grid">
   <a class="link-card" href="ch01_packet_construction/">
     <strong>Chapter 1: Packet Construction</strong>
@@ -33,15 +45,15 @@ Each chapter maps to concrete labs and expected outcomes.
 
 ## Linear Sequence
 
-1. [Chapter 1: Packet Construction](ch01_packet_construction.md)
-2. [Chapter 2: Switching and STP](ch02_switching_and_stp.md)
-3. [Chapter 3: L3 Forwarding and Addressing](ch03_l3_and_addressing.md)
-4. [Chapter 4: Transport, NAT, ACL, and QoS](ch04_transport_nat_acl_qos.md)
+1. [Chapter 1: Packet Construction](ch01_packet_construction)
+2. [Chapter 2: Switching and STP](ch02_switching_and_stp)
+3. [Chapter 3: L3 Forwarding and Addressing](ch03_l3_and_addressing)
+4. [Chapter 4: Transport, NAT, ACL, and QoS](ch04_transport_nat_acl_qos)
 
 ## Part II - Control Plane and Scale
 
-5. [Chapter 5: Control Plane Depth](ch05_control_plane_depth.md)
-6. [Chapter 6: Overlays and Security](ch06_overlays_and_security.md)
+5. [Chapter 5: Control Plane Depth](ch05_control_plane_depth)
+6. [Chapter 6: Overlays and Security](ch06_overlays_and_security)
 
 ## How to use each chapter
 
@@ -57,5 +69,5 @@ Each chapter maps to concrete labs and expected outcomes.
 
 ## Quick Links
 
-- New to the repo: [Start Here](../getting_started.md)
-- CLI and workflows: [Usage Guide](../usage.md)
+- New to the repo: [Start Here](../getting_started)
+- CLI and workflows: [Usage Guide](../usage)

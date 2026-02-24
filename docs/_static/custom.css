@@ -1,7 +1,12 @@
+:root {
+  --pycie-teal: #0f766e;
+  --pycie-amber: #b45309;
+}
+
 .hero-lead {
-  font-size: 1.1rem;
-  line-height: 1.6;
-  max-width: 58rem;
+  font-size: 1.08rem;
+  line-height: 1.65;
+  max-width: 60rem;
 }
 
 .link-grid {
@@ -13,8 +18,8 @@
 
 .link-card {
   display: block;
-  border: 1px solid var(--md-default-fg-color--lightest);
-  border-left: 4px solid var(--md-primary-fg-color);
+  border: 1px solid var(--pst-color-border, #d7dbe2);
+  border-left: 4px solid var(--pycie-teal);
   border-radius: 0.5rem;
   padding: 0.9rem 1rem;
   text-decoration: none;
@@ -23,8 +28,8 @@
 }
 
 .link-card:hover {
-  border-color: var(--md-primary-fg-color);
-  box-shadow: 0 0.35rem 1.1rem color-mix(in srgb, var(--md-primary-fg-color) 18%, transparent);
+  border-color: var(--pycie-teal);
+  box-shadow: 0 0.35rem 1.1rem rgba(15, 118, 110, 0.18);
   transform: translateY(-1px);
 }
 
@@ -41,12 +46,12 @@
 }
 
 .chapter-nav a {
-  border: 1px solid var(--md-default-fg-color--lightest);
+  border: 1px solid var(--pst-color-border, #d7dbe2);
   border-radius: 999px;
   padding: 0.25rem 0.75rem;
   text-decoration: none;
 }
 
 .chapter-nav a:hover {
-  border-color: var(--md-primary-fg-color);
+  border-color: var(--pycie-teal);
 }
