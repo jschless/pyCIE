@@ -9,6 +9,9 @@ Most operational incidents come down to route choice, prefix interpretation, and
 - `lab06c_ip_subnet_mac_forwarding_basics`
 - `lab07_ipv4_forwarding`
 - `lab08_arp`
+- `lab22_icmp_control_plane_basics`
+- `lab24_ipv4_fragmentation_reassembly`
+- `lab26_ipv6_slaac_ra_rs_dad`
 - `lab20_ipv6_nd_forwarding`
 
 ## Concepts to master
@@ -24,6 +27,9 @@ Most operational incidents come down to route choice, prefix interpretation, and
 pycie run lab06c --student-src dist/student/src
 pycie run lab07 --student-src dist/student/src
 pycie run lab08 --student-src dist/student/src
+pycie run lab22 --student-src dist/student/src
+pycie run lab24 --student-src dist/student/src
+pycie run lab26 --student-src dist/student/src
 pycie run lab20 --student-src dist/student/src
 ```
 

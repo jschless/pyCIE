@@ -49,6 +49,7 @@ pycie check
 Expected result:
 
 - `pycie labs` lists labs including `lab06a`, `lab06b`, `lab06c`
+- New fundamentals/ops labs (`lab22`, `lab24`, `lab25`, `lab26`, `lab28`, `lab29`, `lab40`, `lab41`) are present
 - `pycie check` passes contract tests
 
 ## 3) Start in student mode
@@ -82,7 +83,7 @@ pycie restore
 
 Core sequence:
 
-- `lab01` -> `lab02` -> `lab03` -> `lab04` -> `lab05` -> `lab06` -> `lab06a` -> `lab06b` -> `lab06c` -> `lab07` -> ...
+- `lab01` -> `lab02` -> `lab03` -> `lab04` -> `lab05` -> `lab06` -> `lab06a` -> `lab06b` -> `lab06c` -> `lab07` -> `lab22` -> `lab24` -> `lab25` -> `lab26` -> ...
 
 Textbook flow with context and outcomes:
 

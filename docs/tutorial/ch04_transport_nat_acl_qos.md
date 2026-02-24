@@ -7,6 +7,7 @@ Policy and service behavior depends on transport metadata and deterministic rule
 ## Labs
 
 - `lab06b_tcp_udp_fundamentals`
+- `lab25_pmtud_and_mss`
 - `lab21_nat44_pipeline`
 - `lab31_acl_filtering`
 - `lab27_qos_marking_queueing`
@@ -21,6 +22,7 @@ Policy and service behavior depends on transport metadata and deterministic rule
 ## Hands-on sequence
 
 ```bash
+pycie run lab25 --student-src dist/student/src
 pycie run lab21 --student-src dist/student/src
 pycie run lab31 --student-src dist/student/src
 pycie run lab27 --student-src dist/student/src

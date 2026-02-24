@@ -131,7 +131,8 @@ pycie scenario run labs/scenarios/lab16_dual_failure.json --report json --report
 ### Core protocol sequence
 
 1. `lab01` -> `lab02` -> `lab03` -> `lab04` -> `lab05` -> `lab06` -> `lab06a` -> `lab06b` -> `lab06c` -> `lab07` -> ... -> `lab21`
-2. Then advanced labs (`lab23`, `lab30+`)
+2. Continue with fundamentals depth: `lab22`, `lab24`, `lab25`, `lab26`, `lab29`
+3. Then advanced labs (`lab23`, `lab30+`, `lab40`, `lab41`)
 
 ### Router decision internals
 
@@ -157,9 +158,12 @@ pycie scenario run labs/scenarios/lab16_dual_failure.json --report json --report
 ### Services/security track
 
 1. `lab31_acl_filtering`
-2. `lab33_dhcp_services`
-3. `lab32_aaa_access_control`
-4. `lab37_macsec_link_security`
+2. `lab28_dhcpv6_services`
+3. `lab33_dhcp_services`
+4. `lab32_aaa_access_control`
+5. `lab40_fhrp_gateway_redundancy`
+6. `lab41_management_plane_observability`
+7. `lab37_macsec_link_security`
 
 ### Overlay/multicast track
 

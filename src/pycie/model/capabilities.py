@@ -44,6 +44,14 @@ class CapabilitySet:
     ikev2: bool = False
     ipv6_nd: bool = False
     nat44: bool = False
+    icmp: bool = False
+    fragmentation: bool = False
+    pmtud: bool = False
+    ipv6_slaac: bool = False
+    dhcpv6: bool = False
+    lacp: bool = False
+    fhrp: bool = False
+    mgmt_observability: bool = False
     packet_construction: bool = False
     transport_basics: bool = False
     ip_addressing_basics: bool = False

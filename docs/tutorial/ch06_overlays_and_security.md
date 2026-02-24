@@ -41,4 +41,5 @@ You should be able to explain packet identity across encapsulation layers and id
 <div class="chapter-nav">
   <a href="../">Course Map</a>
   <a href="../ch05_control_plane_depth/">Previous: Chapter 5</a>
+  <a href="../ch07_services_and_operations/">Next: Chapter 7</a>
 </div>

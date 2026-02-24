@@ -48,8 +48,10 @@ fast onboarding for your first lab, or textbook-style progression for deeper pro
 - Switching and spanning tree behavior
 - IPv4/IPv6 forwarding and neighbor resolution
 - Transport fundamentals (TCP/UDP)
+- ICMP diagnostics, fragmentation, and PMTUD
 - Policy, ACL, NAT, and QoS pipelines
 - Control-plane protocol behaviors (OSPF, BGP, IS-IS, EVPN)
+- Service and operations foundations (DHCPv6, FHRP, observability)
 
 ## Architecture and References
 

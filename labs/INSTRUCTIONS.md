@@ -4,6 +4,7 @@ This workbook is designed as a progression from foundational L2 forwarding to mu
 
 The first six labs focus on core control-plane behavior.
 Labs `06a`-`06c` add packet/transport/addressing fundamentals before `lab07`.
+Labs `22`, `24`, `25`, `26`, `28`, `29`, `40`, and `41` extend fundamentals into diagnostics, MTU behavior, host services, and operations.
 Labs `07+` extend into full data-plane modeling, encapsulation, policy, VRF, and capstone failure scenarios.
 
 Use `/docs/roadmap.md` as the active backlog for realism upgrades and new labs (`lab17+`).

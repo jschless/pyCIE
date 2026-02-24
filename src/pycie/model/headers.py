@@ -26,6 +26,10 @@ class IPv4Header:
     ttl: int = 64
     dscp: int = 0
     protocol: int = 0
+    identification: int = 0
+    flags: frozenset[str] = frozenset()
+    fragment_offset: int = 0
+    total_length: int = 20
 
 
 @dataclass(frozen=True)
@@ -54,6 +58,7 @@ class TCPHeader:
     flags: frozenset[str] = frozenset()
     window: int = 65535
     checksum: int = 0
+    mss: int | None = None
 
 
 @dataclass(frozen=True)
@@ -76,3 +81,19 @@ class MPLSLabel:
     exp: int = 0
     bottom_of_stack: bool = True
     ttl: int = 255
+
+
+@dataclass(frozen=True)
+class ICMPHeader:
+    icmp_type: int
+    icmp_code: int = 0
+    identifier: int = 0
+    sequence: int = 0
+
+
+@dataclass(frozen=True)
+class ICMPv6Header:
+    icmp_type: int
+    icmp_code: int = 0
+    identifier: int = 0
+    sequence: int = 0

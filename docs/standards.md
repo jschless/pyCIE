@@ -30,6 +30,19 @@ Note: IEEE standards pages are linked for normative reference. The workbook uses
   - https://datatracker.ietf.org/doc/html/rfc793
 - TCP modernized specification: RFC 9293
   - https://datatracker.ietf.org/doc/html/rfc9293
+- ICMPv4: RFC 792
+  - https://datatracker.ietf.org/doc/html/rfc792
+- ICMPv6: RFC 4443
+  - https://datatracker.ietf.org/doc/html/rfc4443
+
+## Fragmentation and PMTUD
+
+- IPv4 fragmentation behavior: RFC 791
+  - https://datatracker.ietf.org/doc/html/rfc791
+- Path MTU Discovery for IPv4: RFC 1191
+  - https://datatracker.ietf.org/doc/html/rfc1191
+- Packetization Layer PMTUD (context): RFC 4821
+  - https://datatracker.ietf.org/doc/html/rfc4821
 
 ## OSPF
 
@@ -97,6 +110,35 @@ Note: IEEE standards pages are linked for normative reference. The workbook uses
   - https://datatracker.ietf.org/doc/html/rfc2865
 - TACACS+: RFC 8907
   - https://datatracker.ietf.org/doc/html/rfc8907
+
+## IPv6 host services and addressing
+
+- Neighbor Discovery for IPv6: RFC 4861
+  - https://datatracker.ietf.org/doc/html/rfc4861
+- SLAAC: RFC 4862
+  - https://datatracker.ietf.org/doc/html/rfc4862
+- DHCPv6: RFC 8415
+  - https://datatracker.ietf.org/doc/html/rfc8415
+
+## Link aggregation and gateway redundancy
+
+- Link Aggregation (normative): IEEE 802.1AX
+  - https://1.ieee802.org/tsn/802-1ax-rev/
+- VRRP for IPv4/IPv6: RFC 5798
+  - https://datatracker.ietf.org/doc/html/rfc5798
+
+## Management-plane observability
+
+- LLDP: IEEE 802.1AB
+  - https://standards.ieee.org/ieee/802.1AB/10950/
+- Syslog protocol: RFC 5424
+  - https://datatracker.ietf.org/doc/html/rfc5424
+- SNMP SMIv2: RFC 2578
+  - https://datatracker.ietf.org/doc/html/rfc2578
+- DNS concepts: RFC 1034
+  - https://datatracker.ietf.org/doc/html/rfc1034
+- NTPv4: RFC 5905
+  - https://datatracker.ietf.org/doc/html/rfc5905
 
 ## QoS and traffic class behavior
 

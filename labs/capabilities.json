@@ -118,15 +118,43 @@
     "nat44": true,
     "ipv4_forwarding": true
   },
+  "lab22": {
+    "icmp": true,
+    "ipv4_forwarding": true,
+    "ipv6_nd": true
+  },
   "lab23": {
     "isis": true,
     "ipv4_forwarding": true
+  },
+  "lab24": {
+    "fragmentation": true,
+    "ipv4_forwarding": true
+  },
+  "lab25": {
+    "pmtud": true,
+    "fragmentation": true,
+    "transport_basics": true,
+    "ipv4_forwarding": true
+  },
+  "lab26": {
+    "ipv6_nd": true,
+    "ipv6_slaac": true
   },
   "lab27": {
     "qos": true,
     "policy": true,
     "ipv4_forwarding": true,
     "transport_basics": true
+  },
+  "lab28": {
+    "dhcpv6": true,
+    "ipv6_nd": true
+  },
+  "lab29": {
+    "lacp": true,
+    "switching": true,
+    "vlan": true
   },
   "lab30": {
     "route_selection": true,
@@ -172,5 +200,12 @@
     "rib_fib_pipeline": true,
     "ipv4_forwarding": true,
     "mpls_forwarding": true
+  },
+  "lab40": {
+    "fhrp": true,
+    "ipv4_forwarding": true
+  },
+  "lab41": {
+    "mgmt_observability": true
   }
 }

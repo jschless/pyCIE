@@ -14,6 +14,7 @@ ch03_l3_and_addressing
 ch04_transport_nat_acl_qos
 ch05_control_plane_depth
 ch06_overlays_and_security
+ch07_services_and_operations
 ```
 
 <div class="link-grid">
@@ -41,6 +42,10 @@ ch06_overlays_and_security
     <strong>Chapter 6: Overlays and Security</strong>
     Tunnels, overlay control planes, and secure transport.
   </a>
+  <a class="link-card" href="ch07_services_and_operations/">
+    <strong>Chapter 7: Services and Operations</strong>
+    DHCP/AAA/FHRP and management-plane observability foundations.
+  </a>
 </div>
 
 ## Linear Sequence
@@ -54,6 +59,7 @@ ch06_overlays_and_security
 
 5. [Chapter 5: Control Plane Depth](ch05_control_plane_depth)
 6. [Chapter 6: Overlays and Security](ch06_overlays_and_security)
+7. [Chapter 7: Services and Operations](ch07_services_and_operations)
 
 ## How to use each chapter
 

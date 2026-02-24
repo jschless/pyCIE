@@ -10,6 +10,7 @@ L2 behavior determines whether frames are delivered, flooded, or looped. STP exi
 - `lab02_stp`
 - `lab09_vlan`
 - `lab10_rstp`
+- `lab29_lacp_link_aggregation`
 
 ## Concepts to master
 
@@ -25,6 +26,7 @@ pycie run lab01 --student-src dist/student/src
 pycie run lab02 --student-src dist/student/src
 pycie run lab09 --student-src dist/student/src
 pycie run lab10 --student-src dist/student/src
+pycie run lab29 --student-src dist/student/src
 ```
 
 For visibility:

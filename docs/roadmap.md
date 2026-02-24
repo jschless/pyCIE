@@ -188,6 +188,37 @@ Acceptance criteria:
 - Capability matrix and scaffold targets include all new fundamentals labs.
 - Learning path docs show early-core placement for fundamentals (`lab06a/b/c` before `lab07`).
 
+### Sprint 6: Fundamentals Expansion Wave B (June 15 to July 12, 2026)
+
+Status: `done`
+
+Deliverables:
+
+- Implement `lab22_icmp_control_plane_basics`.
+- Implement `lab24_ipv4_fragmentation_reassembly`.
+- Implement `lab25_pmtud_and_mss`.
+- Implement `lab26_ipv6_slaac_ra_rs_dad`.
+- Implement `lab28_dhcpv6_services`.
+- Implement `lab29_lacp_link_aggregation`.
+- Implement `lab40_fhrp_gateway_redundancy`.
+- Implement `lab41_management_plane_observability`.
+- Add corresponding README guides, capability wiring, scaffold targets, and exercise/edge-case tests.
+- Expand textbook/tutorial docs with chapter mapping for new fundamentals and operations labs.
+
+Acceptance criteria:
+
+- All new labs are runnable through CLI and pytest markers:
+  - `pycie run lab22`
+  - `pycie run lab24`
+  - `pycie run lab25`
+  - `pycie run lab26`
+  - `pycie run lab28`
+  - `pycie run lab29`
+  - `pycie run lab40`
+  - `pycie run lab41`
+- Each new lab has both exercise and edge-case coverage.
+- Standards/tutorial docs include explicit references for ICMP, PMTUD, SLAAC, DHCPv6, LACP, FHRP, and management observability.
+
 ### Cross-cutting track: Pedagogy and UX (May 11 to May 24, 2026)
 
 Status: `planned`

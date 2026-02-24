@@ -10,6 +10,8 @@ from pycie.model.headers import (
     EthernetHeader,
     ESPHeader,
     GREHeader,
+    ICMPHeader,
+    ICMPv6Header,
     IPv4Header,
     IPv6Header,
     MPLSLabel,
@@ -87,7 +89,7 @@ class PacketStack:
             if isinstance(header, (IPv4Header, IPv6Header)):
                 saw_l3 = True
 
-            if isinstance(header, (TCPHeader, UDPHeader)) and not saw_l3:
+            if isinstance(header, (TCPHeader, UDPHeader, ICMPHeader, ICMPv6Header)) and not saw_l3:
                 return False, "l4_without_l3"
 
         return True, None
@@ -105,5 +107,7 @@ def _header_rank(header: Header) -> int:
     if isinstance(header, (GREHeader, ESPHeader)):
         return 4
     if isinstance(header, (TCPHeader, UDPHeader)):
+        return 5
+    if isinstance(header, (ICMPHeader, ICMPv6Header)):
         return 5
     return 99

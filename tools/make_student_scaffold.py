@@ -205,6 +205,13 @@ TARGETS: tuple[Target, ...] = (
     Target("lab21", "protocols/nat44_pipeline.py", "NAT44Pipeline.translate_outbound", "Implement NAT outbound SNAT/PAT translation"),
     Target("lab21", "protocols/nat44_pipeline.py", "NAT44Pipeline.translate_inbound", "Implement NAT inbound DNAT/session return translation"),
     Target("lab21", "protocols/nat44_pipeline.py", "NAT44Pipeline.age_sessions", "Implement NAT session aging"),
+    # lab22
+    Target("lab22", "protocols/icmp_control_plane_basics.py", "ICMPControlPlaneProcess.build_echo_request", "Implement ICMP echo request builder"),
+    Target("lab22", "protocols/icmp_control_plane_basics.py", "ICMPControlPlaneProcess.build_echo_reply", "Implement ICMP echo reply generation"),
+    Target("lab22", "protocols/icmp_control_plane_basics.py", "ICMPControlPlaneProcess.build_time_exceeded", "Implement ICMP time-exceeded generation"),
+    Target("lab22", "protocols/icmp_control_plane_basics.py", "ICMPControlPlaneProcess.build_destination_unreachable", "Implement ICMP destination-unreachable generation"),
+    Target("lab22", "protocols/icmp_control_plane_basics.py", "ICMPControlPlaneProcess.traceroute_probe", "Implement traceroute probe builder"),
+    Target("lab22", "protocols/icmp_control_plane_basics.py", "ICMPControlPlaneProcess.traceroute_hop_result", "Implement traceroute hop result behavior"),
     # lab23
     Target("lab23", "protocols/isis.py", "ISISProcess.on_start", "Originate initial IS-IS LSPs"),
     Target("lab23", "protocols/isis.py", "ISISProcess.on_frame", "Process inbound IS-IS LSP payloads"),
@@ -212,6 +219,23 @@ TARGETS: tuple[Target, ...] = (
     Target("lab23", "protocols/isis.py", "ISISProcess.install_lsp", "Implement IS-IS LSP sequence comparison"),
     Target("lab23", "protocols/isis.py", "ISISProcess.run_spf", "Implement per-level IS-IS SPF"),
     Target("lab23", "protocols/isis.py", "ISISProcess.compute_routing_table", "Build level-aware routing table output"),
+    # lab24
+    Target("lab24", "protocols/ipv4_fragmentation_reassembly.py", "IPv4FragmentationReassemblyProcess.fragment", "Implement IPv4 packet fragmentation by MTU"),
+    Target("lab24", "protocols/ipv4_fragmentation_reassembly.py", "IPv4FragmentationReassemblyProcess.reassemble", "Implement deterministic IPv4 reassembly"),
+    Target("lab24", "protocols/ipv4_fragmentation_reassembly.py", "IPv4FragmentationReassemblyProcess.ingest_fragment", "Implement fragment-buffer ingest and completion checks"),
+    Target("lab24", "protocols/ipv4_fragmentation_reassembly.py", "IPv4FragmentationReassemblyProcess.age_reassembly_buffers", "Implement reassembly buffer timeout aging"),
+    # lab25
+    Target("lab25", "protocols/pmtud_mss.py", "PMTUDMSSProcess.evaluate_forward", "Implement PMTUD fragmentation-needed evaluation"),
+    Target("lab25", "protocols/pmtud_mss.py", "PMTUDMSSProcess.learn_path_mtu", "Implement PMTU cache update helper"),
+    Target("lab25", "protocols/pmtud_mss.py", "PMTUDMSSProcess.effective_path_mtu", "Implement PMTU cache lookup helper"),
+    Target("lab25", "protocols/pmtud_mss.py", "PMTUDMSSProcess.clamp_syn_mss", "Implement SYN MSS clamp helper"),
+    Target("lab25", "protocols/pmtud_mss.py", "PMTUDMSSProcess.age_path_mtu_cache", "Implement PMTU cache aging"),
+    # lab26
+    Target("lab26", "protocols/ipv6_slaac.py", "IPv6SLAACProcess.configure_router", "Implement per-interface RA configuration"),
+    Target("lab26", "protocols/ipv6_slaac.py", "IPv6SLAACProcess.trigger_rs", "Implement RS trigger scheduling"),
+    Target("lab26", "protocols/ipv6_slaac.py", "IPv6SLAACProcess.emit_due_ra", "Implement deterministic delayed RA emission"),
+    Target("lab26", "protocols/ipv6_slaac.py", "IPv6SLAACProcess.autoconfigure_from_ra", "Implement SLAAC address derivation from RA"),
+    Target("lab26", "protocols/ipv6_slaac.py", "IPv6SLAACProcess.complete_dad", "Implement DAD completion/conflict handling"),
     # lab27
     Target("lab27", "protocols/qos_marking_queueing.py", "QoSMarkingQueueingProcess.classify_dscp", "Implement DSCP to queue classification"),
     Target("lab27", "protocols/qos_marking_queueing.py", "QoSMarkingQueueingProcess.remark", "Implement packet DSCP remark helper"),
@@ -219,6 +243,19 @@ TARGETS: tuple[Target, ...] = (
     Target("lab27", "protocols/qos_marking_queueing.py", "QoSMarkingQueueingProcess.dequeue", "Implement weighted queue scheduling"),
     Target("lab27", "protocols/qos_marking_queueing.py", "QoSMarkingQueueingProcess.queue_depth", "Implement queue depth helper"),
     Target("lab27", "protocols/qos_marking_queueing.py", "QoSMarkingQueueingProcess.snapshot_depths", "Implement queue snapshot helper"),
+    # lab28
+    Target("lab28", "protocols/dhcpv6.py", "DHCPv6Server.handle_solicit", "Implement deterministic DHCPv6 advertise allocation"),
+    Target("lab28", "protocols/dhcpv6.py", "DHCPv6Server.handle_request", "Implement DHCPv6 request/reply handling"),
+    Target("lab28", "protocols/dhcpv6.py", "DHCPv6Server.renew", "Implement DHCPv6 lease renewal"),
+    Target("lab28", "protocols/dhcpv6.py", "DHCPv6Server.release", "Implement DHCPv6 lease release"),
+    Target("lab28", "protocols/dhcpv6.py", "DHCPv6Server.age_leases", "Implement DHCPv6 lease aging"),
+    Target("lab28", "protocols/dhcpv6.py", "DHCPv6Server.relay", "Implement DHCPv6 relay helper behavior"),
+    # lab29
+    Target("lab29", "protocols/lacp.py", "LACPProcess.add_port", "Implement LACP local port registration"),
+    Target("lab29", "protocols/lacp.py", "LACPProcess.receive_lacpdu", "Implement LACP partner state processing"),
+    Target("lab29", "protocols/lacp.py", "LACPProcess.active_members", "Implement active bundle membership selection"),
+    Target("lab29", "protocols/lacp.py", "LACPProcess.select_egress", "Implement deterministic bundle egress selection"),
+    Target("lab29", "protocols/lacp.py", "LACPProcess.age_sessions", "Implement LACP session timeout aging"),
     # lab30
     Target("lab30", "protocols/route_selection.py", "RouteSelectionEngine.install_route", "Implement route candidate install/replace semantics"),
     Target("lab30", "protocols/route_selection.py", "RouteSelectionEngine.withdraw_route", "Implement route candidate withdrawal"),
@@ -284,6 +321,19 @@ TARGETS: tuple[Target, ...] = (
     Target("lab39", "protocols/rib_fib_pipeline.py", "RIBFIBPipeline.recompute", "Implement RIB-to-FIB recompute pipeline"),
     Target("lab39", "protocols/rib_fib_pipeline.py", "RIBFIBPipeline.lookup", "Implement FIB longest-prefix lookup"),
     Target("lab39", "protocols/rib_fib_pipeline.py", "RIBFIBPipeline.explain", "Implement route-programming explain output"),
+    # lab40
+    Target("lab40", "protocols/fhrp.py", "FHRPProcess.register_router", "Implement FHRP member registration"),
+    Target("lab40", "protocols/fhrp.py", "FHRPProcess.elect_master", "Implement FHRP master election"),
+    Target("lab40", "protocols/fhrp.py", "FHRPProcess.update_router", "Implement FHRP failover/preemption updates"),
+    Target("lab40", "protocols/fhrp.py", "FHRPProcess.current_virtual_mac", "Implement deterministic virtual MAC helper"),
+    Target("lab40", "protocols/fhrp.py", "FHRPProcess.failover_elapsed_ms", "Implement failover timing helper"),
+    # lab41
+    Target("lab41", "protocols/management_plane_observability.py", "ManagementPlaneObservabilityProcess.learn_lldp", "Implement LLDP neighbor learning"),
+    Target("lab41", "protocols/management_plane_observability.py", "ManagementPlaneObservabilityProcess.age_lldp", "Implement LLDP neighbor aging"),
+    Target("lab41", "protocols/management_plane_observability.py", "ManagementPlaneObservabilityProcess.log_syslog", "Implement syslog severity filtering"),
+    Target("lab41", "protocols/management_plane_observability.py", "ManagementPlaneObservabilityProcess.poll_snmp_oid", "Implement SNMP poll helper"),
+    Target("lab41", "protocols/management_plane_observability.py", "ManagementPlaneObservabilityProcess.resolve_dns", "Implement DNS cache resolve helper"),
+    Target("lab41", "protocols/management_plane_observability.py", "ManagementPlaneObservabilityProcess.check_service_readiness", "Implement service dependency checks"),
 )
 
 

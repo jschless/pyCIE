@@ -133,7 +133,7 @@ pytest -m exercise
 
 ### Foundational path
 
-- `lab01` -> `lab02` -> `lab03` -> `lab04` -> `lab05` -> `lab06` -> `lab06a` -> `lab06b` -> `lab06c` -> `lab07` -> ... -> `lab21`
+- `lab01` -> `lab02` -> `lab03` -> `lab04` -> `lab05` -> `lab06` -> `lab06a` -> `lab06b` -> `lab06c` -> `lab07` -> `lab22` -> `lab24` -> `lab25` -> `lab26` -> ... -> `lab41`
 
 ### Router internals path
 
@@ -145,7 +145,7 @@ pytest -m exercise
 
 ### Services/security path
 
-- `lab31` -> `lab33` -> `lab32` -> `lab37`
+- `lab28` -> `lab33` -> `lab32` -> `lab40` -> `lab41` -> `lab37`
 
 ### Overlay/multicast path
 
