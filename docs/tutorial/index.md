@@ -76,4 +76,5 @@ ch07_services_and_operations
 ## Quick Links
 
 - New to the repo: [Start Here](../getting_started)
+- Full lab guides: [Labs Reference](../labs/index)
 - CLI and workflows: [Usage Guide](../usage)

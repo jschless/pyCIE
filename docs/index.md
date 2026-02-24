@@ -6,6 +6,7 @@
 
 getting_started
 tutorial/index
+labs/index
 usage
 visualization
 architecture
@@ -32,6 +33,10 @@ fast onboarding for your first lab, or textbook-style progression for deeper pro
     <strong>Tutorial Course Map</strong>
     Structured chapters with lab sequences and outcomes.
   </a>
+  <a class="link-card" href="labs/">
+    <strong>Labs Reference</strong>
+    Full lab guides rendered directly from lab README sources.
+  </a>
   <a class="link-card" href="usage/">
     <strong>Usage Guide</strong>
     CLI commands, workflows, and troubleshooting.
@@ -56,6 +61,7 @@ fast onboarding for your first lab, or textbook-style progression for deeper pro
 ## Architecture and References
 
 - [Architecture map](architecture)
+- [Labs reference](labs/index)
 - [Standards index](standards)
 - [Roadmap and backlog](roadmap)
 - [Docs site workflow](docs_site)
