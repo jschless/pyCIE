@@ -32,7 +32,7 @@ from pycie.telemetry.webviz import write_web_visualization
 
 EnumType = TypeVar("EnumType", Layer, EventType)
 
-DEFAULT_SCAFFOLD_OUTPUT = Path("src/pycie")
+DEFAULT_SCAFFOLD_OUTPUT = Path("dist/student/src/pycie")
 DEFAULT_REFERENCE_OUTPUT = Path("dist/reference/src/pycie")
 
 
@@ -109,6 +109,21 @@ def run_pytest(
     print("Running:", " ".join(cmd))
     completed = subprocess.run(cmd, cwd=repo_root, env=env)
     return int(completed.returncode)
+
+
+def is_likely_student_scaffold(src_root: Path) -> bool:
+    """Return True when scaffold TODO markers are present across source files."""
+    marker = "TODO(student):"
+    marker_hits = 0
+    for path in src_root.rglob("*.py"):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        marker_hits += text.count(marker)
+        if marker_hits >= 4:
+            return True
+    return False
 
 
 def replace_tree(source: Path, destination: Path) -> None:
@@ -190,6 +205,16 @@ def cmd_show(namespace: argparse.Namespace, repo_root: Path) -> int:
 
 def cmd_run(namespace: argparse.Namespace, repo_root: Path) -> int:
     """Run exercise tests for one lab or all labs."""
+    if namespace.student_src is None:
+        default_src = (repo_root / "src" / "pycie").resolve()
+        if not is_likely_student_scaffold(default_src):
+            print(
+                "Warning: running against solved reference source in src/pycie. "
+                "Use `pycie scaffold --labs all` with `--student-src dist/student/src` "
+                "or scaffold in place via `pycie scaffold --labs all --in-place`.",
+                file=sys.stderr,
+            )
+
     if namespace.target == "all":
         return run_pytest(
             ["-m", "exercise"],
@@ -210,11 +235,28 @@ def cmd_run(namespace: argparse.Namespace, repo_root: Path) -> int:
 
 def cmd_scaffold(namespace: argparse.Namespace, repo_root: Path) -> int:
     """Generate a student TODO scaffold from reference implementation."""
-    output = namespace.output.expanduser().resolve()
     input_src = (repo_root / "src" / "pycie").resolve()
+    in_place = bool(namespace.in_place)
+    if in_place:
+        if namespace.output != DEFAULT_SCAFFOLD_OUTPUT:
+            print("--output cannot be used with --in-place", file=sys.stderr)
+            return 2
+        output = input_src
+    else:
+        output = namespace.output.expanduser().resolve()
+        if output == input_src:
+            print("Refusing in-place scaffold without --in-place", file=sys.stderr)
+            return 2
+
+    if not in_place and namespace.no_reference_snapshot:
+        print("--no-reference-snapshot is only valid with --in-place", file=sys.stderr)
+        return 2
+    if not in_place and namespace.reference_output != DEFAULT_REFERENCE_OUTPUT:
+        print("--reference-output is only used with --in-place", file=sys.stderr)
+        return 2
+
     reference_output = namespace.reference_output.expanduser().resolve()
     script = (repo_root / "tools" / "make_student_scaffold.py").resolve()
-    in_place = output == input_src
     scaffold_input = input_src
     reference_snapshotted = False
     temp_dir: tempfile.TemporaryDirectory[str] | None = None
@@ -370,11 +412,13 @@ def cmd_guide(namespace: argparse.Namespace, repo_root: Path) -> int:
     print("Suggested commands:")
     print("  pycie labs")
     print("  pycie scaffold --labs all")
+    print("  pycie run lab01 --student-src dist/student/src")
+    print("  pycie scaffold --labs all --in-place")
     print("  pycie run lab01")
     print("  pycie restore")
     print("  pycie scaffold --labs all --output dist/student/src/pycie")
     print("  pycie run lab01 --student-src dist/student/src")
-    print("  pycie run lab01 --trace-out traces/lab01.jsonl")
+    print("  pycie run lab01 --student-src dist/student/src --trace-out traces/lab01.jsonl")
     print("  pycie viz replay --trace traces/lab01.jsonl --detail packet")
     print("  pycie viz packet --trace traces/lab01.jsonl --packet-id p1")
     print("  pycie viz topology --trace traces/lab01.jsonl --packet-id p1")
@@ -382,7 +426,7 @@ def cmd_guide(namespace: argparse.Namespace, repo_root: Path) -> int:
     print("  pycie viz stp --trace traces/lab02.jsonl")
     print("  pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01")
     print("  pycie scenario run labs/scenarios/lab16_dual_failure.json")
-    print("  pip install -e .[docs]")
+    print("  pip install -e '.[docs]'")
     print("  mkdocs serve")
     print("  mkdocs build --strict")
     print("  make bootstrap")
@@ -398,14 +442,14 @@ def cmd_quickstart(namespace: argparse.Namespace, repo_root: Path) -> int:
     print("pyCIE Quickstart")
     print("1) python -m venv .venv")
     print("2) source .venv/bin/activate")
-    print("3) pip install -e .[dev]")
+    print("3) pip install -e '.[dev]'")
     print("4) pycie labs")
     print("5) pycie scaffold --labs all")
-    print("6) pycie run lab01")
-    print("7) pycie run lab06a")
-    print("8) pycie run lab06b")
-    print("9) pycie run lab06c")
-    print("10) pycie run lab01 --trace-out traces/lab01.jsonl")
+    print("6) pycie run lab01 --student-src dist/student/src")
+    print("7) pycie run lab06a --student-src dist/student/src")
+    print("8) pycie run lab06b --student-src dist/student/src")
+    print("9) pycie run lab06c --student-src dist/student/src")
+    print("10) pycie run lab01 --student-src dist/student/src --trace-out traces/lab01.jsonl")
     print("11) pycie viz replay --trace traces/lab01.jsonl --detail packet")
     print("12) pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01")
     print("13) pycie scenario run labs/scenarios/lab16_dual_failure.json")
@@ -563,18 +607,23 @@ def build_parser() -> argparse.ArgumentParser:
         "--output",
         type=Path,
         default=DEFAULT_SCAFFOLD_OUTPUT,
-        help="Output scaffold package path (default: src/pycie)",
+        help="Output scaffold package path (default: dist/student/src/pycie)",
+    )
+    p_scaffold.add_argument(
+        "--in-place",
+        action="store_true",
+        help="Write scaffold into src/pycie (requires explicit opt-in)",
     )
     p_scaffold.add_argument(
         "--reference-output",
         type=Path,
         default=DEFAULT_REFERENCE_OUTPUT,
-        help="Reference snapshot path used for in-place scaffold (default: dist/reference/src/pycie)",
+        help="Reference snapshot path used with --in-place (default: dist/reference/src/pycie)",
     )
     p_scaffold.add_argument(
         "--no-reference-snapshot",
         action="store_true",
-        help="Do not save solved source snapshot before in-place scaffold",
+        help="Do not save solved source snapshot when using --in-place",
     )
     p_scaffold.add_argument(
         "--strict",

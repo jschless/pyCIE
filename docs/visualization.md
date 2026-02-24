@@ -14,11 +14,11 @@ This phase-1 visualization scope covers:
 Run labs with `--trace-out`:
 
 ```bash
-pycie run lab01 --trace-out traces/lab01.jsonl
-pycie run lab02 --trace-out traces/lab02.jsonl
-pycie run lab07 --trace-out traces/lab07.jsonl
-pycie run lab11 --trace-out traces/lab11.jsonl
-pycie run lab12 --trace-out traces/lab12.jsonl
+pycie run lab01 --student-src dist/student/src --trace-out traces/lab01.jsonl
+pycie run lab02 --student-src dist/student/src --trace-out traces/lab02.jsonl
+pycie run lab07 --student-src dist/student/src --trace-out traces/lab07.jsonl
+pycie run lab11 --student-src dist/student/src --trace-out traces/lab11.jsonl
+pycie run lab12 --student-src dist/student/src --trace-out traces/lab12.jsonl
 ```
 
 ## Replay traces
@@ -97,20 +97,20 @@ Every event is one JSON object with fields:
 
 Understand STP election changes:
 
-1. Run `pycie run lab02 --trace-out traces/lab02.jsonl`
+1. Run `pycie run lab02 --student-src dist/student/src --trace-out traces/lab02.jsonl`
 2. Run `pycie viz stp --trace traces/lab02.jsonl`
 3. Correlate `STP_ROOT_CHANGE` with `STP_PORT_ROLE_CHANGE`
 
 Understand encapsulation + encryption layering:
 
-1. Run `pycie run lab11 --trace-out traces/lab11.jsonl`
-2. Run `pycie run lab12 --trace-out traces/lab12.jsonl`
+1. Run `pycie run lab11 --student-src dist/student/src --trace-out traces/lab11.jsonl`
+2. Run `pycie run lab12 --student-src dist/student/src --trace-out traces/lab12.jsonl`
 3. Filter for `ENCAP_PUSH`/`ENCAP_POP` and `CRYPTO_ENCRYPT`/`CRYPTO_DECRYPT`
 4. Use `pycie viz packet` for packet-by-packet path
 
 Understand where a packet is in the topology:
 
-1. Run `pycie run lab01 --trace-out traces/lab01.jsonl`
+1. Run `pycie run lab01 --student-src dist/student/src --trace-out traces/lab01.jsonl`
 2. Run `pycie viz topology --trace traces/lab01.jsonl --packet-id p1`
 3. Run `pycie viz sequence --trace traces/lab01.jsonl --packet-id p1`
 

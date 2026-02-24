@@ -2,10 +2,29 @@
 
 `pyCIE` teaches networking by having you implement protocol behavior in Python.
 
+<p class="hero-lead">
 Use this documentation in two modes:
+fast onboarding for your first lab, or textbook-style progression for deeper protocol intuition.
+</p>
 
-- **Get started fast**: follow [Start Here](getting_started.md)
-- **Study like a textbook**: follow the [Tutorial](tutorial/index.md)
+<div class="link-grid">
+  <a class="link-card" href="getting_started/">
+    <strong>Start Here</strong>
+    Fast setup, first scaffold run, and first lab loop.
+  </a>
+  <a class="link-card" href="tutorial/">
+    <strong>Tutorial Course Map</strong>
+    Structured chapters with lab sequences and outcomes.
+  </a>
+  <a class="link-card" href="usage/">
+    <strong>Usage Guide</strong>
+    CLI commands, workflows, and troubleshooting.
+  </a>
+  <a class="link-card" href="visualization/">
+    <strong>Visualization Guide</strong>
+    Trace capture, replay, topology, and web viewer workflows.
+  </a>
+</div>
 
 ## What you will build
 
@@ -16,10 +35,9 @@ Use this documentation in two modes:
 - Policy, ACL, NAT, and QoS pipelines
 - Control-plane protocol behaviors (OSPF, BGP, IS-IS, EVPN)
 
-## Fast links
+## Architecture and References
 
-- Setup + first lab: [Start Here](getting_started.md)
-- CLI reference: [Usage Guide](usage.md)
-- Lab backlog and priorities: [Roadmap](roadmap.md)
-- RFC/standards references: [Standards](standards.md)
-- Architecture map: [Architecture](architecture.md)
+- [Architecture map](architecture.md)
+- [Standards index](standards.md)
+- [Roadmap and backlog](roadmap.md)
+- [Docs site workflow](docs_site.md)

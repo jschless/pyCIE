@@ -15,6 +15,21 @@
       "at_ms": 750,
       "action": "fail_link",
       "params": {"a": "pe1:eth0", "b": "p1:eth0"}
+    },
+    {
+      "at_ms": 800,
+      "action": "route_set_absent",
+      "params": {"selector": "node=pe1,prefix=10.200.2.0/24,vrf=CUST_A"}
+    },
+    {
+      "at_ms": 1750,
+      "action": "route_set_present",
+      "params": {"selector": "node=pe1,prefix=10.200.2.0/24,vrf=CUST_A"}
+    },
+    {
+      "at_ms": 1900,
+      "action": "mark_converged",
+      "params": {}
     }
   ],
   "expectations": [
@@ -27,6 +42,16 @@
       "kind": "convergence_ms_lte",
       "selector": "fabric",
       "expected": 1200
+    },
+    {
+      "kind": "route_present",
+      "selector": "node=pe1,prefix=10.200.2.0/24,vrf=CUST_A",
+      "expected": true
     }
-  ]
+  ],
+  "metadata": {
+    "initial_routes": {
+      "node=pe1,prefix=10.200.2.0/24,vrf=CUST_A": true
+    }
+  }
 }

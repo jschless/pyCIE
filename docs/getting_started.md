@@ -2,6 +2,21 @@
 
 This is the shortest path from clone to meaningful learning.
 
+<div class="link-grid">
+  <a class="link-card" href="tutorial/">
+    <strong>Continue to Tutorial</strong>
+    Move from setup to chapter-by-chapter learning.
+  </a>
+  <a class="link-card" href="usage/">
+    <strong>CLI Usage Guide</strong>
+    Command reference and workflow patterns.
+  </a>
+  <a class="link-card" href="visualization/">
+    <strong>Visualization Guide</strong>
+    Trace capture and replay tools for debugging.
+  </a>
+</div>
+
 ## 1) Environment setup
 
 ```bash
@@ -9,7 +24,7 @@ git clone <repo-url>
 cd pyCIE
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .[dev]
+pip install -e '.[dev]'
 ```
 
 Optional shortcut:
@@ -42,23 +57,25 @@ Expected result:
 
 ```bash
 pycie scaffold --labs all
-pycie run lab01
+pycie run lab01 --student-src dist/student/src
 ```
 
-You can restore solved source later:
+If you choose in-place scaffold mode, you can restore solved source later:
 
 ```bash
+pycie scaffold --labs all --in-place
+pycie run lab01
 pycie restore
 ```
 
 ## 4) First learning loop (30-45 minutes)
 
 1. Implement one small lab:
-   - `pycie run lab06a`
+   - `pycie run lab06a --student-src dist/student/src`
 2. Run focused tests while iterating:
    - `pytest -m "lab06a and exercise"`
 3. Capture and inspect telemetry:
-   - `pycie run lab01 --trace-out traces/lab01.jsonl`
+   - `pycie run lab01 --student-src dist/student/src --trace-out traces/lab01.jsonl`
    - `pycie viz replay --trace traces/lab01.jsonl --detail packet`
 
 ## 5) Follow the recommended sequence

@@ -33,6 +33,12 @@ Run a scenario-driven convergence and resiliency exercise across L2/L3 protocols
   - event log list
   - state dict for action effects
 - `apply_action` should normalize action type and record each event consistently.
+- Supported actions include:
+  - `fail_link`
+  - `fail_bgp_peer`
+  - `route_set_present`
+  - `route_set_absent`
+  - `mark_converged`
 - `evaluate_expectation` should return `(ok, failure_message_or_none)` for each supported expectation kind.
 - Keep failure messages specific enough for learners to debug expectation mismatches.
 
@@ -51,8 +57,8 @@ pytest -m "lab16 and exercise"
 
 3. Implement `evaluate_expectation`.
    - Support event presence checks.
-   - Support convergence threshold checks in the simplified model.
-   - Support route-presence placeholder checks.
+   - Support convergence threshold checks from first disruption to explicit convergence mark.
+   - Support route-presence checks from scenario route state.
    - Return useful mismatch messages.
 
 4. Implement `run`.

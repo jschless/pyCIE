@@ -28,7 +28,7 @@ You learn networking by implementing protocol logic in Python, not by memorizing
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .[dev]
+pip install -e '.[dev]'
 ```
 
 Optional shortcuts via `Makefile`:
@@ -45,16 +45,23 @@ Then use the CLI:
 pycie quickstart
 pycie labs
 pycie scaffold --labs all
-pycie run lab01
-pycie run lab06a
-pycie run lab06b
-pycie run lab06c
-pycie run lab01 --trace-out traces/lab01.jsonl
+pycie run lab01 --student-src dist/student/src
+pycie run lab06a --student-src dist/student/src
+pycie run lab06b --student-src dist/student/src
+pycie run lab06c --student-src dist/student/src
+pycie run lab01 --student-src dist/student/src --trace-out traces/lab01.jsonl
 pycie viz replay --trace traces/lab01.jsonl --detail packet
 pycie viz topology --trace traces/lab01.jsonl --packet-id p1
 pycie viz sequence --trace traces/lab01.jsonl --packet-id p1 --detail packet
 pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01
 pycie scenario run labs/scenarios/lab16_dual_failure.json
+```
+
+Optional in-place workflow:
+
+```bash
+pycie scaffold --labs all --in-place
+pycie run lab01
 ```
 
 If `pycie` is not on path:
@@ -75,7 +82,8 @@ Guided docs:
 - `pycie run <labXX>`: run one lab's exercise tests
 - `pycie run <labXX> --trace-out <file>`: run lab and capture telemetry JSONL
 - `pycie run all`: run all exercise tests
-- `pycie scaffold --labs <list|all>`: apply TODO scaffold to `src/pycie` (in place) by default
+- `pycie scaffold --labs <list|all>`: generate TODO scaffold at `dist/student/src/pycie` by default
+- `pycie scaffold --labs <list|all> --in-place`: apply TODO scaffold directly to `src/pycie`
 - `pycie restore`: restore solved source from `dist/reference/src/pycie`
 - `pycie restore --labs <list>`: restore solved files for specific labs only
 - `pycie run <labXX> --student-src <dir>`: optional alternate source root for advanced workflows
@@ -109,7 +117,7 @@ pytest -m "lab01 and exercise"
 Capture trace while running one lab:
 
 ```bash
-pycie run lab01 --trace-out traces/lab01.jsonl
+pycie run lab01 --student-src dist/student/src --trace-out traces/lab01.jsonl
 pycie viz replay --trace traces/lab01.jsonl
 pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01
 pycie scenario run labs/scenarios/lab16_dual_failure.json --report md --report-out dist/reports/lab16.md
@@ -167,8 +175,7 @@ pytest -m exercise
 
 ```bash
 pycie scaffold --labs all
-pycie run lab01
-pycie restore
+pycie run lab01 --student-src dist/student/src
 ```
 
 ### Fresh-clone student mode (blank labs)
@@ -178,12 +185,14 @@ If you want blank TODO labs after cloning:
 
 ```bash
 pycie scaffold --labs all
-pycie run lab01
+pycie run lab01 --student-src dist/student/src
 ```
 
-This snapshots solved code to `dist/reference/src/pycie` automatically, so you can restore later:
+For in-place student mode, use explicit opt-in:
 
 ```bash
+pycie scaffold --labs all --in-place
+pycie run lab01
 pycie restore
 pycie restore --labs lab01,lab07
 ```
@@ -219,7 +228,7 @@ git checkout -b student/<name>
 Build docs locally:
 
 ```bash
-pip install -e .[docs]
+pip install -e '.[docs]'
 mkdocs serve
 ```
 

@@ -24,13 +24,21 @@ Scalable network behavior depends on deterministic control-plane convergence and
 ## Hands-on sequence
 
 ```bash
-pycie run lab17
-pycie run lab18
-pycie run lab23
-pycie run lab38
-pycie run lab39
+pycie run lab17 --student-src dist/student/src
+pycie run lab18 --student-src dist/student/src
+pycie run lab23 --student-src dist/student/src
+pycie run lab38 --student-src dist/student/src
+pycie run lab39 --student-src dist/student/src
 ```
 
 ## Checkpoint
 
 You should be able to explain where a route lives at each stage (protocol DB, RIB, FIB) and what event caused each transition.
+
+## Chapter navigation
+
+<div class="chapter-nav">
+  <a href="../">Course Map</a>
+  <a href="../ch04_transport_nat_acl_qos/">Previous: Chapter 4</a>
+  <a href="../ch06_overlays_and_security/">Next: Chapter 6</a>
+</div>

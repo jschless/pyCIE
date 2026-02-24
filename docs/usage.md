@@ -15,7 +15,7 @@ pyCIE is a protocol-first networking workbook.
 ```bash
 python -m venv .venv
 source .venv/bin/activate
-pip install -e .[dev]
+pip install -e '.[dev]'
 ```
 
 Shortcut:
@@ -58,10 +58,10 @@ pycie show lab01
 Run one lab:
 
 ```bash
-pycie run lab01
-pycie run lab06a
-pycie run lab06b
-pycie run lab06c
+pycie run lab01 --student-src dist/student/src
+pycie run lab06a --student-src dist/student/src
+pycie run lab06b --student-src dist/student/src
+pycie run lab06c --student-src dist/student/src
 ```
 
 Generate TODO scaffold from reference source:
@@ -73,7 +73,7 @@ pycie scaffold --labs all
 Run one lab:
 
 ```bash
-pycie run lab01
+pycie run lab01 --student-src dist/student/src
 ```
 
 Restore solved source after scaffolding:
@@ -93,13 +93,13 @@ pycie run lab01 --student-src dist/student/src
 Run one lab and capture telemetry:
 
 ```bash
-pycie run lab01 --trace-out traces/lab01.jsonl
+pycie run lab01 --student-src dist/student/src --trace-out traces/lab01.jsonl
 ```
 
 Run all exercise labs:
 
 ```bash
-pycie run all
+pycie run all --student-src dist/student/src
 ```
 
 Run contract checks only:
@@ -186,16 +186,23 @@ pycie scaffold --labs all
 Run tests directly:
 
 ```bash
-pycie run lab01
+pycie run lab01 --student-src dist/student/src
 ```
 
 ### Fresh clone behavior
 
 `main` ships with reference solutions. If you run `pycie run lab01` directly in a fresh clone, tests run against solved source.
 To force TODO-based student work, run `pycie scaffold --labs all` first.
-By default, this writes TODO scaffolding into `src/pycie` and snapshots solved code to `dist/reference/src/pycie`.
+By default, this writes TODO scaffolding into `dist/student/src/pycie`.
 
-Restore solved source any time:
+For in-place mode, use explicit opt-in and then restore from snapshot later:
+
+```bash
+pycie scaffold --labs all --in-place
+pycie run lab01
+```
+
+Restore solved source any time (in-place mode only):
 
 ```bash
 pycie restore
@@ -255,7 +262,7 @@ python -m pycie labs
 ## Build docs site locally
 
 ```bash
-pip install -e .[docs]
+pip install -e '.[docs]'
 mkdocs serve
 mkdocs build --strict
 ```

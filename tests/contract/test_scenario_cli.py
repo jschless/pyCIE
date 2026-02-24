@@ -102,6 +102,7 @@ def test_scenario_run_writes_json_report(
     assert payload["passed"] is True
     assert payload["lab_id"] == "lab16"
     assert payload["actions"] >= 1
+    assert payload["telemetry"]["state"]["convergence"]["elapsed_ms"] > 0
 
 
 def test_scenario_run_writes_markdown_report(

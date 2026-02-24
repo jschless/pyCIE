@@ -24,14 +24,21 @@ Production networks combine encapsulation, identity, and policy layers; debuggin
 ## Hands-on sequence
 
 ```bash
-pycie run lab11
-pycie run lab12
-pycie run lab19
-pycie run lab35
-pycie run lab36
-pycie run lab37
+pycie run lab11 --student-src dist/student/src
+pycie run lab12 --student-src dist/student/src
+pycie run lab19 --student-src dist/student/src
+pycie run lab35 --student-src dist/student/src
+pycie run lab36 --student-src dist/student/src
+pycie run lab37 --student-src dist/student/src
 ```
 
 ## Checkpoint
 
 You should be able to explain packet identity across encapsulation layers and identify where security or overlay policy caused a drop.
+
+## Chapter navigation
+
+<div class="chapter-nav">
+  <a href="../">Course Map</a>
+  <a href="../ch05_control_plane_depth/">Previous: Chapter 5</a>
+</div>
