@@ -86,7 +86,7 @@ Core sequence:
 
 Textbook flow with context and outcomes:
 
-- [Tutorial Course Map](tutorial/index.md)
+- [Tutorial Course Map](tutorial/index)
 
 ## Common pitfalls
 

@@ -4,7 +4,6 @@ on:
   pull_request:
     paths:
       - "docs/**"
-      - "mkdocs.yml"
       - "README.md"
       - "pyproject.toml"
       - ".github/workflows/docs.yml"
@@ -12,7 +11,6 @@ on:
     branches: ["main"]
     paths:
       - "docs/**"
-      - "mkdocs.yml"
       - "README.md"
       - "pyproject.toml"
       - ".github/workflows/docs.yml"
@@ -40,11 +38,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e '.[docs]'
       - name: Build docs
-        run: mkdocs build --strict
+        run: sphinx-build -W -b dirhtml docs docs/_build/dirhtml
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: site
+          path: docs/_build/dirhtml
 
   deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

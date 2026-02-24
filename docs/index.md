@@ -1,5 +1,21 @@
 # pyCIE Workbook
 
+```{toctree}
+:maxdepth: 2
+:hidden:
+
+getting_started
+tutorial/index
+usage
+visualization
+architecture
+standards
+roadmap
+docs_site
+TODO
+visualization_cli_plan
+```
+
 `pyCIE` teaches networking by having you implement protocol behavior in Python.
 
 <p class="hero-lead">
@@ -37,7 +53,7 @@ fast onboarding for your first lab, or textbook-style progression for deeper pro
 
 ## Architecture and References
 
-- [Architecture map](architecture.md)
-- [Standards index](standards.md)
-- [Roadmap and backlog](roadmap.md)
-- [Docs site workflow](docs_site.md)
+- [Architecture map](architecture)
+- [Standards index](standards)
+- [Roadmap and backlog](roadmap)
+- [Docs site workflow](docs_site)

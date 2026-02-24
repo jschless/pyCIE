@@ -229,13 +229,13 @@ Build docs locally:
 
 ```bash
 pip install -e '.[docs]'
-mkdocs serve
+sphinx-autobuild docs docs/_build/dirhtml
 ```
 
 Run strict static build checks:
 
 ```bash
-mkdocs build --strict
+sphinx-build -W -b dirhtml docs docs/_build/dirhtml
 ```
 
 The repository includes `.github/workflows/docs.yml` to build docs on pull requests and deploy to GitHub Pages on `main`.
