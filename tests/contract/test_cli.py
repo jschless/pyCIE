@@ -144,6 +144,19 @@ def test_build_parser_accepts_scenario_run_arguments() -> None:
     assert namespace.report_out == Path("dist/reports/lab16.json")
 
 
+def test_build_parser_accepts_scenario_validate_arguments() -> None:
+    parser = build_parser()
+    namespace = parser.parse_args(
+        [
+            "scenario",
+            "validate",
+            "labs/scenarios/lab16_failure_recovery_drill.json",
+        ]
+    )
+
+    assert namespace.scenario_file == Path("labs/scenarios/lab16_failure_recovery_drill.json")
+
+
 def test_cli_main_scaffold_invokes_generator(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],

@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from ipaddress import ip_address, ip_network
 
 from pycie.model.headers import IPv4Header
 from pycie.model.packet import PacketStack
+from pycie.telemetry.events import EventType, Layer
+from pycie.telemetry.packet import ensure_packet_id
 
 from .base import ProtocolBase
 
@@ -52,22 +54,64 @@ class NAT44Pipeline(ProtocolBase):
 
     def translate_outbound(self, packet: PacketStack, *, now_ms: int) -> tuple[PacketStack | None, str | None]:
         """Apply outbound SNAT/PAT for inside-to-outside traffic."""
+        packet_id = ensure_packet_id(packet)
         ipv4 = _find_ipv4(packet)
         if ipv4 is None:
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.NAT_TRANSLATE_OUTBOUND,
+                packet_id=packet_id,
+                details={"action": "drop", "reason": "no_ipv4_header"},
+            )
             return None, "no_ipv4_header"
         if not _in_prefix(ipv4.src_ip, self.inside_prefix):
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.NAT_TRANSLATE_OUTBOUND,
+                packet_id=packet_id,
+                details={"action": "bypass", "reason": "source_not_inside", "src_ip": ipv4.src_ip},
+            )
+            return packet.clone(), None
+        if _in_prefix(ipv4.dst_ip, self.inside_prefix):
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.NAT_TRANSLATE_OUTBOUND,
+                packet_id=packet_id,
+                details={"action": "bypass", "reason": "destination_inside", "dst_ip": ipv4.dst_ip},
+            )
+            return packet.clone(), None
+        if not _in_prefix(ipv4.dst_ip, self.outside_prefix):
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.NAT_TRANSLATE_OUTBOUND,
+                packet_id=packet_id,
+                details={"action": "bypass", "reason": "destination_outside_prefix", "dst_ip": ipv4.dst_ip},
+            )
             return packet.clone(), None
 
         l4 = _read_l4_tuple(packet)
         if l4 is None:
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.NAT_TRANSLATE_OUTBOUND,
+                packet_id=packet_id,
+                details={"action": "drop", "reason": "missing_l4_tuple"},
+            )
             return None, "missing_l4_tuple"
         protocol, src_port, dst_port = l4
 
         key = (ipv4.src_ip, src_port, ipv4.dst_ip, dst_port, protocol)
         session = self.sessions.get(key)
+        decision = "reuse_session"
         if session is None:
             translated_port = self._allocate_port()
             if translated_port is None:
+                self.emit_trace(
+                    layer=Layer.L3,
+                    event_type=EventType.NAT_TRANSLATE_OUTBOUND,
+                    packet_id=packet_id,
+                    details={"action": "drop", "reason": "nat_pool_exhausted"},
+                )
                 return None, "nat_pool_exhausted"
             session = NAT44Session(
                 inside_ip=ipv4.src_ip,
@@ -81,6 +125,22 @@ class NAT44Pipeline(ProtocolBase):
                 last_seen_ms=now_ms,
             )
             self.sessions[key] = session
+            decision = "create_session"
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.NAT_SESSION_CREATE,
+                packet_id=packet_id,
+                details={
+                    "direction": "outbound",
+                    "inside_ip": session.inside_ip,
+                    "inside_port": session.inside_port,
+                    "outside_ip": session.outside_ip,
+                    "outside_port": session.outside_port,
+                    "translated_ip": session.translated_ip,
+                    "translated_port": session.translated_port,
+                    "protocol": session.protocol,
+                },
+            )
         else:
             self.sessions[key] = _touch_session(session, now_ms=now_ms)
             session = self.sessions[key]
@@ -91,15 +151,44 @@ class NAT44Pipeline(ProtocolBase):
         translated.metadata["dst_port"] = dst_port
         translated.metadata["nat_direction"] = "outbound"
         translated.metadata["nat_session_key"] = key
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.NAT_TRANSLATE_OUTBOUND,
+            packet_id=packet_id,
+            details={
+                "action": "translate",
+                "decision": decision,
+                "inside_ip": ipv4.src_ip,
+                "inside_port": src_port,
+                "outside_ip": ipv4.dst_ip,
+                "outside_port": dst_port,
+                "translated_ip": session.translated_ip,
+                "translated_port": session.translated_port,
+                "protocol": protocol,
+            },
+        )
         return translated, None
 
     def translate_inbound(self, packet: PacketStack, *, now_ms: int) -> tuple[PacketStack | None, str | None]:
         """Apply inbound DNAT for static rules and dynamic session return flows."""
+        packet_id = ensure_packet_id(packet)
         ipv4 = _find_ipv4(packet)
         if ipv4 is None:
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.NAT_TRANSLATE_INBOUND,
+                packet_id=packet_id,
+                details={"action": "drop", "reason": "no_ipv4_header"},
+            )
             return None, "no_ipv4_header"
         l4 = _read_l4_tuple(packet)
         if l4 is None:
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.NAT_TRANSLATE_INBOUND,
+                packet_id=packet_id,
+                details={"action": "drop", "reason": "missing_l4_tuple"},
+            )
             return None, "missing_l4_tuple"
         protocol, src_port, dst_port = l4
 
@@ -107,21 +196,65 @@ class NAT44Pipeline(ProtocolBase):
             if (
                 ipv4.dst_ip == rule.public_ip
                 and dst_port == rule.public_port
-                and protocol == rule.protocol
+                and protocol == rule.protocol.lower()
             ):
                 translated = packet.clone()
                 _replace_ipv4(translated, src_ip=ipv4.src_ip, dst_ip=rule.inside_ip)
                 translated.metadata["src_port"] = src_port
                 translated.metadata["dst_port"] = rule.inside_port
                 translated.metadata["nat_direction"] = "inbound_static"
+                self.emit_trace(
+                    layer=Layer.L3,
+                    event_type=EventType.NAT_TRANSLATE_INBOUND,
+                    packet_id=packet_id,
+                    details={
+                        "action": "translate",
+                        "decision": "static_rule",
+                        "public_ip": rule.public_ip,
+                        "public_port": rule.public_port,
+                        "inside_ip": rule.inside_ip,
+                        "inside_port": rule.inside_port,
+                        "protocol": rule.protocol,
+                    },
+                )
                 return translated, None
 
         session = self._find_session_by_translated(protocol=protocol, translated_port=dst_port)
         if session is None:
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.NAT_TRANSLATE_INBOUND,
+                packet_id=packet_id,
+                details={"action": "drop", "reason": "session_not_found", "translated_port": dst_port},
+            )
             return None, "session_not_found"
         if ipv4.dst_ip != session.translated_ip:
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.NAT_TRANSLATE_INBOUND,
+                packet_id=packet_id,
+                details={
+                    "action": "drop",
+                    "reason": "translated_ip_mismatch",
+                    "expected_translated_ip": session.translated_ip,
+                    "received_dst_ip": ipv4.dst_ip,
+                },
+            )
             return None, "translated_ip_mismatch"
         if ipv4.src_ip != session.outside_ip or src_port != session.outside_port:
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.NAT_TRANSLATE_INBOUND,
+                packet_id=packet_id,
+                details={
+                    "action": "drop",
+                    "reason": "return_path_mismatch",
+                    "expected_outside_ip": session.outside_ip,
+                    "expected_outside_port": session.outside_port,
+                    "received_src_ip": ipv4.src_ip,
+                    "received_src_port": src_port,
+                },
+            )
             return None, "return_path_mismatch"
 
         self._update_session(session, now_ms=now_ms)
@@ -130,6 +263,22 @@ class NAT44Pipeline(ProtocolBase):
         translated.metadata["src_port"] = src_port
         translated.metadata["dst_port"] = session.inside_port
         translated.metadata["nat_direction"] = "inbound_dynamic"
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.NAT_TRANSLATE_INBOUND,
+            packet_id=packet_id,
+            details={
+                "action": "translate",
+                "decision": "dynamic_session",
+                "inside_ip": session.inside_ip,
+                "inside_port": session.inside_port,
+                "outside_ip": session.outside_ip,
+                "outside_port": session.outside_port,
+                "translated_ip": session.translated_ip,
+                "translated_port": session.translated_port,
+                "protocol": session.protocol,
+            },
+        )
         return translated, None
 
     def age_sessions(self, *, now_ms: int) -> None:
@@ -139,6 +288,20 @@ class NAT44Pipeline(ProtocolBase):
             if now_ms - session.last_seen_ms >= self.session_timeout_ms
         ]
         for key in expired:
+            session = self.sessions[key]
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.NAT_SESSION_EXPIRE,
+                details={
+                    "inside_ip": session.inside_ip,
+                    "inside_port": session.inside_port,
+                    "outside_ip": session.outside_ip,
+                    "outside_port": session.outside_port,
+                    "translated_ip": session.translated_ip,
+                    "translated_port": session.translated_port,
+                    "protocol": session.protocol,
+                },
+            )
             del self.sessions[key]
 
     def _allocate_port(self) -> int | None:
@@ -181,13 +344,7 @@ def _find_ipv4(packet: PacketStack) -> IPv4Header | None:
 def _replace_ipv4(packet: PacketStack, *, src_ip: str, dst_ip: str) -> None:
     for idx, header in enumerate(packet.headers):
         if isinstance(header, IPv4Header):
-            packet.headers[idx] = IPv4Header(
-                src_ip=src_ip,
-                dst_ip=dst_ip,
-                ttl=header.ttl,
-                dscp=header.dscp,
-                protocol=header.protocol,
-            )
+            packet.headers[idx] = replace(header, src_ip=src_ip, dst_ip=dst_ip)
             return
 
 
@@ -197,7 +354,7 @@ def _read_l4_tuple(packet: PacketStack) -> tuple[str, int, int] | None:
     dst_port = packet.metadata.get("dst_port")
     if not isinstance(protocol, str) or not isinstance(src_port, int) or not isinstance(dst_port, int):
         return None
-    return protocol, src_port, dst_port
+    return protocol.lower(), src_port, dst_port
 
 
 def _touch_session(session: NAT44Session, *, now_ms: int) -> NAT44Session:

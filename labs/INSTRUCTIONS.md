@@ -28,6 +28,53 @@ Each lab has:
 6. Run lab tests repeatedly.
 7. Write short notes explaining state transitions and tie-breakers.
 
+## Step Intent (How to think about each TODO)
+
+Each TODO method is not just "code to make tests pass." It represents one stage in
+protocol reasoning. Use this sequence while implementing:
+
+1. Input and state validation
+   - Confirm packet fields, timers, and identifiers are admissible.
+   - Reject malformed or out-of-scope input early and explicitly.
+2. Candidate construction
+   - Build the possible outputs (ports, routes, sessions, policies, labels).
+   - Keep candidates explicit so tie-break logic is visible.
+3. Deterministic decision
+   - Apply documented ranking/tie-break rules in fixed order.
+   - Preserve deterministic behavior for reproducible tests.
+4. State commit
+   - Update local tables/state machines only after a decision is made.
+   - Keep transitions explainable ("from X to Y because Z").
+5. Output action and reason
+   - Forward/flood/advertise/drop with a clear reason.
+   - Prefer explicit drop reasons so behavior is debuggable.
+6. Aging and recovery
+   - Handle timeout expiration and reconvergence as first-class behavior.
+
+Deep lab-by-lab pedagogical context:
+
+- `docs/labs/pedagogical_overview.md`
+
+## Capstone lens (`lab16`)
+
+In `lab16`, treat each scenario action as a concrete implementation step in an
+incident timeline:
+
+1. Disruptions:
+   - `fail_link`, `fail_bgp_peer`
+2. Observable impact:
+   - `route_set_absent`
+3. Restorations:
+   - `recover_link`, `recover_bgp_peer`
+4. Recovery completion:
+   - `route_set_present`, `mark_converged`
+
+When implementing runner behavior, ask:
+
+1. What state changed?
+2. Is the state change timestamped and reproducible?
+3. What expectation proves the behavior happened?
+
 ## Scaffold API Quick Reference
 
 Use these helpers when implementing protocol methods:

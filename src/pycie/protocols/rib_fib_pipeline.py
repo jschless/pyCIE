@@ -5,6 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from ipaddress import ip_address, ip_network
 
+from pycie.telemetry.events import EventType, Layer
+from pycie.telemetry.trace import emit_from_env
+
 
 @dataclass(frozen=True)
 class PipelineRoute:
@@ -45,6 +48,7 @@ class RIBFIBPipeline:
     next_hops: dict[str, NextHopResolution] = field(default_factory=dict)
     fib: dict[str, FIBEntry] = field(default_factory=dict)
     traces: dict[str, list[PipelineStep]] = field(default_factory=dict)
+    trace_node: str = "rib-fib"
 
     def install_route(self, route: PipelineRoute) -> None:
         self.routes = [
@@ -73,19 +77,10 @@ class RIBFIBPipeline:
         self.next_hops[resolution.next_hop] = resolution
 
     def best_route_for_prefix(self, prefix: str) -> PipelineRoute | None:
-        candidates = [route for route in self.routes if route.prefix == prefix]
+        candidates = self._ordered_candidates_for_prefix(prefix)
         if not candidates:
             return None
-        ordered = sorted(
-            candidates,
-            key=lambda route: (
-                route.admin_distance,
-                route.metric,
-                route.protocol,
-                route.next_hop,
-            ),
-        )
-        return ordered[0]
+        return candidates[0]
 
     def resolve_next_hop(self, next_hop: str, *, max_depth: int = 8) -> tuple[str, str] | None:
         visited: set[str] = set()
@@ -120,35 +115,118 @@ class RIBFIBPipeline:
         )
 
         for prefix in prefixes:
-            trace: list[PipelineStep] = [PipelineStep(prefix, "candidate_count", str(sum(1 for route in self.routes if route.prefix == prefix)))]
-            best = self.best_route_for_prefix(prefix)
-            if best is None:
+            candidates = self._ordered_candidates_for_prefix(prefix)
+            self._emit_trace(
+                event_type=EventType.RIB_CANDIDATE_EVALUATE,
+                details={
+                    "prefix": prefix,
+                    "candidate_count": len(candidates),
+                },
+            )
+            trace: list[PipelineStep] = [
+                PipelineStep(prefix, "candidate_count", str(len(candidates)))
+            ]
+            if not candidates:
                 trace.append(PipelineStep(prefix, "skip", "no_candidate"))
-                self.traces[prefix] = trace
-                continue
-
-            trace.append(
-                PipelineStep(
-                    prefix,
-                    "selected",
-                    f"{best.protocol} ad={best.admin_distance} metric={best.metric} nh={best.next_hop}",
+                self._emit_trace(
+                    event_type=EventType.RIB_ROUTE_SKIP,
+                    details={
+                        "prefix": prefix,
+                        "reason": "no_candidate",
+                    },
                 )
-            )
-
-            resolved = self.resolve_next_hop(best.next_hop)
-            if resolved is None:
-                trace.append(PipelineStep(prefix, "skip", "unresolved_next_hop"))
                 self.traces[prefix] = trace
                 continue
 
-            egress_if, resolved_next_hop = resolved
-            self.fib[prefix] = FIBEntry(
-                prefix=prefix,
-                egress_if=egress_if,
-                next_hop=resolved_next_hop,
-                source_protocol=best.protocol,
-            )
-            trace.append(PipelineStep(prefix, "installed", f"egress={egress_if} nh={resolved_next_hop}"))
+            installed = False
+            for idx, candidate in enumerate(candidates, start=1):
+                trace.append(
+                    PipelineStep(
+                        prefix,
+                        "candidate",
+                        (
+                            f"{candidate.protocol} ad={candidate.admin_distance} "
+                            f"metric={candidate.metric} nh={candidate.next_hop}"
+                        ),
+                    )
+                )
+                self._emit_trace(
+                    event_type=EventType.RIB_CANDIDATE_EVALUATE,
+                    details={
+                        "prefix": prefix,
+                        "candidate_rank": idx,
+                        "protocol": candidate.protocol,
+                        "admin_distance": candidate.admin_distance,
+                        "metric": candidate.metric,
+                        "next_hop": candidate.next_hop,
+                    },
+                )
+                resolved = self.resolve_next_hop(candidate.next_hop)
+                if resolved is None:
+                    trace.append(
+                        PipelineStep(
+                            prefix,
+                            "candidate_unresolved",
+                            f"nh={candidate.next_hop}",
+                        )
+                    )
+                    self._emit_trace(
+                        event_type=EventType.RIB_ROUTE_SKIP,
+                        details={
+                            "prefix": prefix,
+                            "reason": "candidate_unresolved",
+                            "protocol": candidate.protocol,
+                            "next_hop": candidate.next_hop,
+                        },
+                    )
+                    continue
+
+                egress_if, resolved_next_hop = resolved
+                self.fib[prefix] = FIBEntry(
+                    prefix=prefix,
+                    egress_if=egress_if,
+                    next_hop=resolved_next_hop,
+                    source_protocol=candidate.protocol,
+                )
+                trace.append(
+                    PipelineStep(
+                        prefix,
+                        "selected",
+                        (
+                            f"{candidate.protocol} ad={candidate.admin_distance} "
+                            f"metric={candidate.metric} nh={candidate.next_hop}"
+                        ),
+                    )
+                )
+                trace.append(
+                    PipelineStep(
+                        prefix,
+                        "installed",
+                        f"egress={egress_if} nh={resolved_next_hop}",
+                    )
+                )
+                self._emit_trace(
+                    event_type=EventType.RIB_ROUTE_INSTALL,
+                    details={
+                        "prefix": prefix,
+                        "egress_if": egress_if,
+                        "resolved_next_hop": resolved_next_hop,
+                        "source_protocol": candidate.protocol,
+                        "candidate_next_hop": candidate.next_hop,
+                    },
+                )
+                installed = True
+                break
+
+            if not installed:
+                trace.append(PipelineStep(prefix, "skip", "unresolved_next_hop"))
+                self._emit_trace(
+                    event_type=EventType.RIB_ROUTE_SKIP,
+                    details={
+                        "prefix": prefix,
+                        "reason": "unresolved_next_hop",
+                    },
+                )
             self.traces[prefix] = trace
 
     def lookup(self, dst_ip: str) -> FIBEntry | None:
@@ -170,3 +248,23 @@ class RIBFIBPipeline:
 
     def explain(self, prefix: str) -> list[PipelineStep]:
         return list(self.traces.get(prefix, []))
+
+    def _ordered_candidates_for_prefix(self, prefix: str) -> list[PipelineRoute]:
+        return sorted(
+            (route for route in self.routes if route.prefix == prefix),
+            key=lambda route: (
+                route.admin_distance,
+                route.metric,
+                route.protocol,
+                route.next_hop,
+            ),
+        )
+
+    def _emit_trace(self, *, event_type: EventType, details: dict[str, object]) -> None:
+        emit_from_env(
+            sim_time_ms=0,
+            node=self.trace_node,
+            layer=Layer.L3,
+            event_type=event_type,
+            details=details,
+        )

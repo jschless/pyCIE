@@ -78,6 +78,8 @@ pycie restore
 3. Capture and inspect telemetry:
    - `pycie run lab01 --student-src dist/student/src --trace-out traces/lab01.jsonl`
    - `pycie viz replay --trace traces/lab01.jsonl --detail packet`
+   - `pycie viz explain --trace traces/lab01.jsonl --packet-id p1 --lab lab01`
+   - `pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01 --lab lab01`
 
 ## 5) Follow the recommended sequence
 
@@ -88,6 +90,16 @@ Core sequence:
 Textbook flow with context and outcomes:
 
 - [Tutorial Course Map](tutorial/index)
+- [Pedagogical Lab Overview](labs/pedagogical_overview)
+
+When you reach capstone labs, use this sequence for increasing scenario complexity:
+
+- `pycie scenario validate labs/scenarios/lab16_single_link_failure.json`
+- `pycie scenario run labs/scenarios/lab16_single_link_failure.json`
+- `pycie scenario validate labs/scenarios/lab16_failure_recovery_drill.json`
+- `pycie scenario run labs/scenarios/lab16_failure_recovery_drill.json`
+- `pycie scenario validate labs/scenarios/lab16_dual_failure.json`
+- `pycie scenario run labs/scenarios/lab16_dual_failure.json`
 
 ## Common pitfalls
 

@@ -96,6 +96,16 @@ def test_normalize_trace_for_web_is_deterministic() -> None:
     assert payload_a["event_count"] == 4
 
 
+def test_normalize_trace_for_web_includes_lab_metadata_and_phase_labels() -> None:
+    payload = normalize_trace_for_web(_sample_trace_events(), trace_path=Path("trace.jsonl"), lab="lab01")
+
+    assert payload["lab"]["id"] == "lab01"
+    assert "Goal:" in payload["lab"]["goal"]
+    assert payload["lab"]["checkpoints"]
+    assert payload["events"][0]["phase_label"] is not None
+    assert payload["lab"]["phase_summary"]
+
+
 def test_viz_web_generates_static_assets(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],
@@ -128,9 +138,42 @@ def test_viz_web_generates_static_assets(
     index_html = index_path.read_text(encoding="utf-8")
     assert 'script src="data.js"' in index_html
     assert 'script src="viewer.js"' in index_html
+    assert 'id="event-filter"' in index_html
+    assert 'id="phase-filter"' in index_html
+    assert 'id="drop-filter"' in index_html
+    assert 'id="from-ms-filter"' in index_html
+    assert 'id="to-ms-filter"' in index_html
+    assert 'id="workbook-pane"' in index_html
+
+    viewer_js = viewer_path.read_text(encoding="utf-8")
+    assert "explainEvent" in viewer_js
+    assert "All drop reasons" in viewer_js
+    assert "phase-filter" in viewer_js
 
     payload = json.loads(data_json_path.read_text(encoding="utf-8"))
     assert payload["event_count"] == 4
     assert payload["topology"]["nodes"] == ["r1", "r2"]
     assert payload["packets"]["ids"] == ["p1"]
     assert payload["events"][0]["seq"] == 1
+
+
+def test_viz_web_supports_lab_argument(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    repo_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    trace = tmp_path / "trace_lab.jsonl"
+    write_trace_events(trace, _sample_trace_events())
+    out_dir = tmp_path / "viewer_lab"
+
+    monkeypatch.chdir(repo_root)
+    code = main(["viz", "web", "--trace", str(trace), "--out", str(out_dir), "--lab", "lab01"])
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "Web viewer generated" in out
+
+    payload = json.loads((out_dir / "data.json").read_text(encoding="utf-8"))
+    assert payload["lab"]["id"] == "lab01"
+    assert payload["events"][0]["phase_label"] is not None

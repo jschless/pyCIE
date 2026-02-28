@@ -64,3 +64,86 @@ def test_runner_convergence_expectation_fails_when_unconverged() -> None:
     result = runner.run(scenario)
     assert not result.passed
     assert any("actual=unconverged" in failure for failure in result.failures)
+
+
+def test_runner_rejects_fail_link_for_unknown_topology_link() -> None:
+    runner = ScenarioRunner(capability_matrix=_matrix())
+    scenario = Scenario(
+        name="unknown-link",
+        lab_id="lab16",
+        topology=TopologySpec(nodes=("r1", "r2"), links=(("r1:eth0", "r2:eth0"),)),
+        actions=[ScenarioAction(at_ms=100, action="fail_link", params={"a": "r1:eth9", "b": "r2:eth9"})],
+        expectations=[],
+    )
+
+    with pytest.raises(ValueError, match="unknown endpoint"):
+        runner.run(scenario)
+
+
+def test_runner_rejects_fail_bgp_peer_for_unknown_node() -> None:
+    runner = ScenarioRunner(capability_matrix=_matrix())
+    scenario = Scenario(
+        name="unknown-bgp-peer",
+        lab_id="lab16",
+        topology=TopologySpec(nodes=("r1", "r2"), links=(("r1:eth0", "r2:eth0"),)),
+        actions=[ScenarioAction(at_ms=100, action="fail_bgp_peer", params={"node": "r1", "peer": "r9"})],
+        expectations=[],
+    )
+
+    with pytest.raises(ValueError, match="unknown node"):
+        runner.run(scenario)
+
+
+def test_runner_recover_actions_restore_failed_state() -> None:
+    runner = ScenarioRunner(capability_matrix=_matrix())
+    scenario = Scenario(
+        name="recover-actions",
+        lab_id="lab16",
+        topology=TopologySpec(nodes=("r1", "r2"), links=(("r1:eth0", "r2:eth0"),)),
+        actions=[
+            ScenarioAction(at_ms=100, action="fail_link", params={"a": "r1:eth0", "b": "r2:eth0"}),
+            ScenarioAction(at_ms=110, action="recover_link", params={"a": "r1:eth0", "b": "r2:eth0"}),
+            ScenarioAction(at_ms=120, action="fail_bgp_peer", params={"node": "r1", "peer": "r2"}),
+            ScenarioAction(at_ms=130, action="recover_bgp_peer", params={"node": "r1", "peer": "r2"}),
+        ],
+        expectations=[
+            Expectation(kind="event_seen", selector="recover_link", expected=True),
+            Expectation(kind="event_seen", selector="recover_bgp_peer", expected=True),
+        ],
+    )
+
+    result = runner.run(scenario)
+    assert result.passed
+    assert result.failures == []
+    assert result.telemetry["state"]["topology"]["links_up"]["r1:eth0<->r2:eth0"] is True
+    assert result.telemetry["state"]["bgp_peers"]["r1<->r2"] is True
+    assert result.telemetry["state"]["last_recovered_link"] == {"a": "r1:eth0", "b": "r2:eth0"}
+    assert result.telemetry["state"]["bgp_peer_recovered"] == {"node": "r1", "peer": "r2"}
+
+
+def test_runner_rejects_recover_link_for_unknown_topology_link() -> None:
+    runner = ScenarioRunner(capability_matrix=_matrix())
+    scenario = Scenario(
+        name="unknown-recover-link",
+        lab_id="lab16",
+        topology=TopologySpec(nodes=("r1", "r2"), links=(("r1:eth0", "r2:eth0"),)),
+        actions=[ScenarioAction(at_ms=100, action="recover_link", params={"a": "r1:eth9", "b": "r2:eth9"})],
+        expectations=[],
+    )
+
+    with pytest.raises(ValueError, match="unknown endpoint"):
+        runner.run(scenario)
+
+
+def test_runner_rejects_recover_bgp_peer_for_unknown_node() -> None:
+    runner = ScenarioRunner(capability_matrix=_matrix())
+    scenario = Scenario(
+        name="unknown-recover-bgp-peer",
+        lab_id="lab16",
+        topology=TopologySpec(nodes=("r1", "r2"), links=(("r1:eth0", "r2:eth0"),)),
+        actions=[ScenarioAction(at_ms=100, action="recover_bgp_peer", params={"node": "r1", "peer": "r9"})],
+        expectations=[],
+    )
+
+    with pytest.raises(ValueError, match="unknown node"):
+        runner.run(scenario)

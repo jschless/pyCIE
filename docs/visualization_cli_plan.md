@@ -1,5 +1,8 @@
 # CLI Visualization Plan (Packet Encapsulation + Device-to-Device Flow)
 
+> Note: this file is historical planning context. For current commands and
+> schema, use `docs/visualization.md` and `src/pycie/telemetry/events.py`.
+
 ## Goal
 
 Build an instructive CLI visualization tool that lets students see:

@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 from pycie.sim.network import Frame
+from pycie.telemetry.events import EventType, Layer
 
 from .base import ProtocolBase
 
@@ -81,20 +82,78 @@ class BGPProcess(ProtocolBase):
         """Drive peer FSM through OPEN/ESTABLISHED."""
         if peer_id not in self.peers:
             return
-        self.peers[peer_id].state = BGPPeerState.ESTABLISHED
+        peer = self.peers[peer_id]
+        old_state = BGPPeerState(peer.state).value
+        peer.state = BGPPeerState.ESTABLISHED
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.BGP_SESSION_CHANGE,
+            details={
+                "peer_id": peer_id,
+                "old_state": old_state,
+                "new_state": BGPPeerState.ESTABLISHED.value,
+                "reason": "start",
+            },
+        )
 
     def process_open(self, peer_id: str, open_msg: BGPOpen) -> None:
         """Validate and process OPEN from peer."""
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.BGP_OPEN_RX,
+            details={
+                "peer_id": peer_id,
+                "open_asn": open_msg.asn,
+                "router_id": open_msg.router_id,
+                "hold_time_s": open_msg.hold_time_s,
+            },
+        )
         peer = self.peers.get(peer_id)
         if peer is None:
             return
+        old_state = BGPPeerState(peer.state).value
         if open_msg.asn != peer.peer_as:
             peer.state = BGPPeerState.IDLE
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.BGP_SESSION_CHANGE,
+                details={
+                    "peer_id": peer_id,
+                    "old_state": old_state,
+                    "new_state": BGPPeerState.IDLE.value,
+                    "reason": "asn_mismatch",
+                    "expected_asn": peer.peer_as,
+                    "received_asn": open_msg.asn,
+                },
+            )
             return
         peer.state = BGPPeerState.ESTABLISHED
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.BGP_SESSION_CHANGE,
+            details={
+                "peer_id": peer_id,
+                "old_state": old_state,
+                "new_state": BGPPeerState.ESTABLISHED.value,
+                "reason": "open_accepted",
+            },
+        )
 
     def process_update(self, peer_id: str, update: BGPUpdate) -> None:
         """Install update into Adj-RIB-In and trigger best-path."""
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.BGP_UPDATE_RX,
+            details={
+                "peer_id": peer_id,
+                "prefix": update.prefix,
+                "next_hop": update.next_hop,
+                "as_path": list(update.as_path),
+                "local_pref": update.local_pref,
+                "med": update.med,
+                "origin": BGPOrigin(update.origin).value,
+            },
+        )
         bucket = self.adj_rib_in.setdefault(peer_id, [])
         bucket = [candidate for candidate in bucket if candidate.prefix != update.prefix]
         bucket.append(update)
@@ -110,6 +169,16 @@ class BGPProcess(ProtocolBase):
                     candidates.append(update)
 
         if not candidates:
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.BGP_BEST_PATH,
+                details={
+                    "prefix": prefix,
+                    "candidate_count": 0,
+                    "selected_next_hop": None,
+                    "reason": "no_candidates",
+                },
+            )
             return None
 
         ordered = sorted(
@@ -123,7 +192,21 @@ class BGPProcess(ProtocolBase):
                 update.as_path,
             ),
         )
-        return ordered[0]
+        best = ordered[0]
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.BGP_BEST_PATH,
+            details={
+                "prefix": prefix,
+                "candidate_count": len(candidates),
+                "selected_next_hop": best.next_hop,
+                "selected_local_pref": best.local_pref,
+                "selected_med": best.med,
+                "selected_as_path_len": len(best.as_path),
+                "reason": "local_pref_as_path_med_next_hop_origin",
+            },
+        )
+        return best
 
     def recompute_loc_rib(self) -> None:
         """Rebuild Loc-RIB from Adj-RIB-In."""
@@ -151,4 +234,14 @@ class BGPProcess(ProtocolBase):
             if peer.peer_as in update.as_path:
                 continue
             out.append(update)
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.BGP_UPDATE_EXPORT,
+                details={
+                    "peer_id": peer_id,
+                    "prefix": update.prefix,
+                    "next_hop": update.next_hop,
+                    "as_path": list(update.as_path),
+                },
+            )
         return out

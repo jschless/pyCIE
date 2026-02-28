@@ -53,8 +53,11 @@ pycie run lab01 --student-src dist/student/src --trace-out traces/lab01.jsonl
 pycie viz replay --trace traces/lab01.jsonl --detail packet
 pycie viz topology --trace traces/lab01.jsonl --packet-id p1
 pycie viz sequence --trace traces/lab01.jsonl --packet-id p1 --detail packet
-pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01
+pycie viz explain --trace traces/lab01.jsonl --packet-id p1 --lab lab01
+pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01 --lab lab01
+pycie scenario validate labs/scenarios/lab16_failure_recovery_drill.json
 pycie scenario run labs/scenarios/lab16_dual_failure.json
+pycie scenario run labs/scenarios/lab16_failure_recovery_drill.json --report md --report-out dist/reports/lab16-recovery.md
 ```
 
 Optional in-place workflow:
@@ -74,6 +77,7 @@ Guided docs:
 
 - Start here: [`docs/getting_started.md`](docs/getting_started.md)
 - Textbook tutorial: [`docs/tutorial/index.md`](docs/tutorial/index.md)
+- Pedagogical lab overview: [`docs/labs/pedagogical_overview.md`](docs/labs/pedagogical_overview.md)
 
 ## CLI commands
 
@@ -95,7 +99,9 @@ Guided docs:
 - `pycie viz topology --trace <file>`: topology snapshot + packet position
 - `pycie viz sequence --trace <file>`: grouped playback over simulation time
 - `pycie viz stp --trace <file>`: STP election/role summary
-- `pycie viz web --trace <file> --out <dir>`: generate an offline HTML viewer
+- `pycie viz explain --trace <file> [--lab labXX]`: pedagogy-first causal explanation view
+- `pycie viz web --trace <file> --out <dir> [--lab labXX]`: generate an offline HTML viewer (phase/workbook view with `--lab`)
+- `pycie scenario validate <scenario-file>`: validate scenario schema without executing actions
 - `pycie scenario run <scenario-file>`: run a scenario fixture with pass/fail exit status
 
 ## Lab model
@@ -119,8 +125,11 @@ Capture trace while running one lab:
 ```bash
 pycie run lab01 --student-src dist/student/src --trace-out traces/lab01.jsonl
 pycie viz replay --trace traces/lab01.jsonl
-pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01
+pycie viz explain --trace traces/lab01.jsonl --packet-id p1 --lab lab01
+pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01 --lab lab01
+pycie scenario validate labs/scenarios/lab16_failure_recovery_drill.json
 pycie scenario run labs/scenarios/lab16_dual_failure.json --report md --report-out dist/reports/lab16.md
+pycie scenario run labs/scenarios/lab16_failure_recovery_drill.json --report json --report-out dist/reports/lab16-recovery.json
 ```
 
 Run all exercise labs:
@@ -214,6 +223,7 @@ git checkout -b student/<name>
 
 - Start here: [`docs/getting_started.md`](docs/getting_started.md)
 - Textbook tutorial: [`docs/tutorial/index.md`](docs/tutorial/index.md)
+- Pedagogical lab overview: [`docs/labs/pedagogical_overview.md`](docs/labs/pedagogical_overview.md)
 - Usage guide: [`docs/usage.md`](docs/usage.md)
 - Docs site workflow: [`docs/docs_site.md`](docs/docs_site.md)
 - Visualization guide: [`docs/visualization.md`](docs/visualization.md)

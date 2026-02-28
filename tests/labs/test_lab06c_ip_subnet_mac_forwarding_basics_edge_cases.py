@@ -39,3 +39,43 @@ def test_static_route_tiebreak_is_deterministic_on_interface_name() -> None:
     assert decision is not None
     assert decision.outgoing_interface == "eth0"
     assert decision.next_hop_ip == "192.0.2.3"
+
+
+def test_static_route_tiebreak_prefers_lower_admin_distance_then_metric() -> None:
+    proc = IPMacBasicsProcess()
+    proc.add_interface(if_name="eth0", prefix="192.0.2.2/24", mac="00:00:00:00:00:01")
+    proc.add_interface(if_name="eth1", prefix="198.51.100.2/24", mac="00:00:00:00:00:02")
+    proc.add_static_route(
+        prefix="203.0.113.0/24",
+        next_hop="192.0.2.1",
+        outgoing_interface="eth0",
+        admin_distance=20,
+        metric=1,
+    )
+    proc.add_static_route(
+        prefix="203.0.113.0/24",
+        next_hop="198.51.100.1",
+        outgoing_interface="eth1",
+        admin_distance=10,
+        metric=100,
+    )
+
+    decision = proc.explain_lookup("203.0.113.42")
+    assert decision is not None
+    assert decision.outgoing_interface == "eth1"
+    assert decision.admin_distance == 10
+    assert decision.metric == 100
+
+    proc.add_static_route(
+        prefix="203.0.113.0/24",
+        next_hop="198.51.100.3",
+        outgoing_interface="eth1",
+        admin_distance=10,
+        metric=5,
+    )
+    decision = proc.explain_lookup("203.0.113.42")
+    assert decision is not None
+    assert decision.outgoing_interface == "eth1"
+    assert decision.next_hop_ip == "198.51.100.3"
+    assert decision.admin_distance == 10
+    assert decision.metric == 5

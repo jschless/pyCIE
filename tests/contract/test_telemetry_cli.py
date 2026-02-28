@@ -254,6 +254,89 @@ def test_viz_stp_reports_final_root_and_port_roles(
     assert "role=ALTERNATE" in out
 
 
+def test_viz_explain_renders_causal_summary(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    repo_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    trace = tmp_path / "trace.jsonl"
+    write_trace_events(trace, _sample_trace_events())
+
+    monkeypatch.chdir(repo_root)
+    code = main(
+        [
+            "viz",
+            "explain",
+            "--trace",
+            str(trace),
+            "--packet-id",
+            "p1",
+            "--max-events",
+            "2",
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "Trace Explanation (packet=p1)" in out
+    assert "queued packet p1 from r1:eth0 to r2:eth1" in out
+    assert "... 2 more events not shown" in out
+
+
+def test_viz_explain_supports_lab_grouping(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    repo_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    trace = tmp_path / "trace.jsonl"
+    write_trace_events(trace, _sample_trace_events())
+
+    monkeypatch.chdir(repo_root)
+    code = main(
+        [
+            "viz",
+            "explain",
+            "--trace",
+            str(trace),
+            "--packet-id",
+            "p1",
+            "--lab",
+            "lab01",
+            "--max-events",
+            "3",
+        ]
+    )
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "Trace Explanation (packet=p1) [lab01]" in out
+    assert "Goal: understand MAC learning and flood vs unicast forwarding." in out
+    assert "Workbook checkpoints:" in out
+    assert "Phase coverage:" in out
+    assert "Phase 3: Frame Movement:" in out
+
+
+def test_viz_tui_snapshot_uses_current_schema(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    repo_root: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    trace = tmp_path / "trace.jsonl"
+    write_trace_events(trace, _sample_trace_events())
+
+    monkeypatch.chdir(repo_root)
+    code = main(["viz", "tui", "--trace", str(trace), "--snapshot"])
+
+    out = capsys.readouterr().out
+    assert code == 0
+    assert "pycie viz tui" in out
+    assert "FRAME_ENQUEUE" in out
+    assert "Topology" in out
+
+
 def test_viz_replay_handles_no_matching_events(
     tmp_path: Path,
     capsys: pytest.CaptureFixture[str],

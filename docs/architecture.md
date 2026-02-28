@@ -64,4 +64,6 @@ This gives repeatable convergence/failure behavior and allows strict unit testin
 
 - Methods students should implement use `NotImplementedError` with a `TODO(student)` message.
 - Data classes and signatures are intentionally complete so students focus on logic, not structure.
-- Protocol complexity is intentionally simplified where possible, but state-machine semantics are preserved.
+- Protocol complexity is intentionally simplified where possible.
+- Deterministic decision semantics (ordering, tie-breaks, explicit drop reasons) are prioritized.
+- Some labs intentionally stage realism with reduced protocol surfaces (for example, omitted timers/signaling paths).

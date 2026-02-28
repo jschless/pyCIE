@@ -7,15 +7,24 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from .events import EventType, TraceEvent
+from .pedagogy import (
+    lab_checkpoints,
+    lab_overview_line,
+    lab_phase_coverage,
+    lab_phase_label,
+    normalize_lab_id,
+)
 
 
 def normalize_trace_for_web(
     events: Sequence[TraceEvent],
     *,
     trace_path: Path | None = None,
+    lab: str | None = None,
 ) -> dict[str, Any]:
     """Return deterministic viewer payload from trace events."""
     ordered = sorted(events, key=lambda event: (event.sim_time_ms, event.seq))
+    normalized_lab = normalize_lab_id(lab)
 
     nodes: set[str] = set()
     links: dict[str, dict[str, Any]] = {}
@@ -61,7 +70,10 @@ def normalize_trace_for_web(
             if isinstance(latency, (int, float)):
                 link["latency_ms"] = latency
 
-        normalized_event = _normalize_event(event)
+        phase = None
+        if normalized_lab is not None:
+            phase = lab_phase_label(normalized_lab, event)
+        normalized_event = _normalize_event(event, phase=phase)
         normalized_events.append(normalized_event)
 
         if event.packet_id is not None:
@@ -85,10 +97,23 @@ def normalize_trace_for_web(
     for packet_id in sorted(packet_index):
         packets_by_id[packet_id] = packet_index[packet_id]
 
+    lab_payload: dict[str, Any] | None = None
+    if normalized_lab is not None:
+        lab_payload = {
+            "id": normalized_lab,
+            "goal": lab_overview_line(normalized_lab),
+            "checkpoints": list(lab_checkpoints(normalized_lab)),
+            "phase_summary": [
+                {"phase": phase, "count": count}
+                for phase, count in lab_phase_coverage(ordered, normalized_lab)
+            ],
+        }
+
     payload = {
         "schema_version": 1,
         "trace_source": str(trace_path) if trace_path is not None else None,
         "event_count": len(normalized_events),
+        "lab": lab_payload,
         "topology": {
             "nodes": sorted(nodes),
             "links": [links[key] for key in sorted(links)],
@@ -107,10 +132,11 @@ def write_web_visualization(
     *,
     output_dir: Path,
     trace_path: Path | None = None,
+    lab: str | None = None,
 ) -> dict[str, Path]:
     """Write static web viewer assets and return output paths."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    payload = normalize_trace_for_web(events, trace_path=trace_path)
+    payload = normalize_trace_for_web(events, trace_path=trace_path, lab=lab)
 
     serialized = json.dumps(payload, indent=2, sort_keys=True)
     data_json = output_dir / "data.json"
@@ -134,7 +160,7 @@ def write_web_visualization(
     }
 
 
-def _normalize_event(event: TraceEvent) -> dict[str, Any]:
+def _normalize_event(event: TraceEvent, *, phase: str | None = None) -> dict[str, Any]:
     packet_tree = event.details.get("packet_tree")
     if isinstance(packet_tree, list):
         rendered_packet_tree = [str(line) for line in packet_tree]
@@ -152,6 +178,7 @@ def _normalize_event(event: TraceEvent) -> dict[str, Any]:
         "node": event.node,
         "layer": event.layer.value,
         "event_type": event.event_type.value,
+        "phase_label": phase,
         "packet_id": event.packet_id,
         "ingress_if": event.ingress_if,
         "egress_if": event.egress_if,
@@ -211,8 +238,28 @@ _INDEX_HTML = """<!doctype html>
       <select id="layer-filter"></select>
     </label>
     <label>
+      Event
+      <select id="event-filter"></select>
+    </label>
+    <label>
+      Phase
+      <select id="phase-filter"></select>
+    </label>
+    <label>
+      Drop Reason
+      <select id="drop-filter"></select>
+    </label>
+    <label>
       Packet
       <select id="packet-filter"></select>
+    </label>
+    <label>
+      From ms
+      <input id="from-ms-filter" type="number" min="0" step="1" placeholder="start">
+    </label>
+    <label>
+      To ms
+      <input id="to-ms-filter" type="number" min="0" step="1" placeholder="end">
     </label>
     <button type="button" id="play-toggle">Play</button>
     <label class="scrubber-wrap">
@@ -223,6 +270,10 @@ _INDEX_HTML = """<!doctype html>
   </section>
 
   <p id="status-line" class="status-line"></p>
+  <section class="workbook pane">
+    <h2>Workbook</h2>
+    <div id="workbook-pane"></div>
+  </section>
 
   <main class="layout">
     <section class="pane">
@@ -286,7 +337,7 @@ body {
 
 .controls {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(11, minmax(0, 1fr));
   gap: 0.7rem;
   padding: 0.6rem 1.4rem 0.2rem 1.4rem;
   align-items: end;
@@ -301,7 +352,8 @@ body {
 
 .controls select,
 .controls button,
-.controls input[type="range"] {
+.controls input[type="range"],
+.controls input[type="number"] {
   border: 1px solid var(--line);
   border-radius: 0.45rem;
   padding: 0.42rem 0.48rem;
@@ -332,6 +384,29 @@ body {
   margin: 0.2rem 1.4rem 0.8rem 1.4rem;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.workbook {
+  margin: 0 1.4rem 0.8rem 1.4rem;
+  min-height: auto;
+}
+
+.workbook ul {
+  margin: 0.4rem 0 0 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.workbook .phase-chip {
+  display: inline-block;
+  margin: 0.2rem 0.4rem 0.2rem 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.12rem 0.45rem;
+  font-size: 0.78rem;
+  background: #fbfcfb;
 }
 
 .layout {
@@ -479,11 +554,11 @@ pre {
 
 @media (max-width: 1180px) {
   .controls {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .scrubber-wrap {
-    grid-column: span 3;
+    grid-column: span 4;
   }
 
   .layout {
@@ -510,13 +585,19 @@ _VIEWER_JS = """(function () {
   const refs = {
     nodeFilter: document.getElementById("node-filter"),
     layerFilter: document.getElementById("layer-filter"),
+    eventFilter: document.getElementById("event-filter"),
+    phaseFilter: document.getElementById("phase-filter"),
+    dropFilter: document.getElementById("drop-filter"),
     packetFilter: document.getElementById("packet-filter"),
+    fromMsFilter: document.getElementById("from-ms-filter"),
+    toMsFilter: document.getElementById("to-ms-filter"),
     playToggle: document.getElementById("play-toggle"),
     scrubber: document.getElementById("timeline-scrubber"),
     scrubberPosition: document.getElementById("scrubber-position"),
     timelinePane: document.getElementById("timeline-pane"),
     topologyPane: document.getElementById("topology-pane"),
     decodePane: document.getElementById("decode-pane"),
+    workbookPane: document.getElementById("workbook-pane"),
     statusLine: document.getElementById("status-line"),
   };
 
@@ -534,7 +615,12 @@ _VIEWER_JS = """(function () {
 
     refs.nodeFilter.addEventListener("change", () => applyFilters(true));
     refs.layerFilter.addEventListener("change", () => applyFilters(true));
+    refs.eventFilter.addEventListener("change", () => applyFilters(true));
+    refs.phaseFilter.addEventListener("change", () => applyFilters(true));
+    refs.dropFilter.addEventListener("change", () => applyFilters(true));
     refs.packetFilter.addEventListener("change", () => applyFilters(true));
+    refs.fromMsFilter.addEventListener("input", () => applyFilters(true));
+    refs.toMsFilter.addEventListener("input", () => applyFilters(true));
     refs.scrubber.addEventListener("input", () => {
       selectEvent(Number(refs.scrubber.value));
     });
@@ -547,12 +633,27 @@ _VIEWER_JS = """(function () {
     addOptions(refs.nodeFilter, "All nodes", (data.topology && data.topology.nodes) || []);
 
     const layerSet = new Set();
+    const eventSet = new Set();
+    const phaseSet = new Set();
+    const dropSet = new Set();
     for (const event of state.events) {
       if (typeof event.layer === "string" && event.layer.length > 0) {
         layerSet.add(event.layer);
       }
+      if (typeof event.event_type === "string" && event.event_type.length > 0) {
+        eventSet.add(event.event_type);
+      }
+      if (typeof event.phase_label === "string" && event.phase_label.length > 0) {
+        phaseSet.add(event.phase_label);
+      }
+      if (event.details && typeof event.details.drop_reason === "string" && event.details.drop_reason.length > 0) {
+        dropSet.add(event.details.drop_reason);
+      }
     }
     addOptions(refs.layerFilter, "All layers", Array.from(layerSet).sort());
+    addOptions(refs.eventFilter, "All events", Array.from(eventSet).sort());
+    addOptions(refs.phaseFilter, "All phases", Array.from(phaseSet).sort());
+    addOptions(refs.dropFilter, "All drop reasons", Array.from(dropSet).sort());
 
     addOptions(refs.packetFilter, "All packets", (data.packets && data.packets.ids) || []);
   }
@@ -576,7 +677,12 @@ _VIEWER_JS = """(function () {
   function applyFilters(resetSelection) {
     const node = refs.nodeFilter.value;
     const layer = refs.layerFilter.value;
+    const eventType = refs.eventFilter.value;
+    const phase = refs.phaseFilter.value;
+    const dropReason = refs.dropFilter.value;
     const packetId = refs.packetFilter.value;
+    const fromMs = parseOptionalNumber(refs.fromMsFilter.value);
+    const toMs = parseOptionalNumber(refs.toMsFilter.value);
 
     state.filteredEvents = state.events.filter((event) => {
       if (node && event.node !== node) {
@@ -585,7 +691,26 @@ _VIEWER_JS = """(function () {
       if (layer && event.layer !== layer) {
         return false;
       }
+      if (eventType && event.event_type !== eventType) {
+        return false;
+      }
+      if (phase && event.phase_label !== phase) {
+        return false;
+      }
+      if (dropReason) {
+        const eventDropReason =
+          event.details && typeof event.details.drop_reason === "string" ? event.details.drop_reason : "";
+        if (eventDropReason !== dropReason) {
+          return false;
+        }
+      }
       if (packetId && event.packet_id !== packetId) {
+        return false;
+      }
+      if (fromMs !== null && Number(event.sim_time_ms) < fromMs) {
+        return false;
+      }
+      if (toMs !== null && Number(event.sim_time_ms) > toMs) {
         return false;
       }
       return true;
@@ -611,11 +736,19 @@ _VIEWER_JS = """(function () {
       refs.statusLine.classList.add("warning");
       refs.topologyPane.innerHTML = '<p class="empty">No topology for current filter set.</p>';
       refs.decodePane.innerHTML = '<p class="empty">No event selected.</p>';
+      renderWorkbook(null);
       return;
     }
 
     refs.statusLine.classList.remove("warning");
-    refs.statusLine.textContent = "Tip: scrub timeline or click an event row to inspect packet fields.";
+    const labTip =
+      data.lab && data.lab.goal
+        ? ` Lab goal: ${data.lab.goal}`
+        : "";
+    refs.statusLine.textContent =
+      `Showing ${state.filteredEvents.length} of ${state.events.length} events.` +
+      " Tip: click a row to see field-level decode and explanation." +
+      labTip;
     selectEvent(state.selectedIndex);
   }
 
@@ -632,7 +765,8 @@ _VIEWER_JS = """(function () {
       row.type = "button";
       row.className = "timeline-row";
       row.dataset.index = String(index);
-      row.textContent = formatEventLine(event);
+      const phasePrefix = event.phase_label ? `[${event.phase_label}] ` : "";
+      row.textContent = `${phasePrefix}${formatEventLine(event)} | ${explainEvent(event)}`;
       row.addEventListener("click", () => selectEvent(index));
       fragment.appendChild(row);
     });
@@ -658,6 +792,7 @@ _VIEWER_JS = """(function () {
 
     renderTopology(event);
     renderDecode(event);
+    renderWorkbook(event);
   }
 
   function renderTopology(currentEvent) {
@@ -710,6 +845,11 @@ _VIEWER_JS = """(function () {
     summary.textContent = `seq=${event.seq} sim=${event.sim_time_ms}ms node=${event.node} layer=${event.layer} event=${event.event_type} packet=${packetId}`;
     refs.decodePane.appendChild(summary);
 
+    const explanation = document.createElement("p");
+    explanation.className = "decode-summary";
+    explanation.textContent = `why: ${explainEvent(event)}`;
+    refs.decodePane.appendChild(explanation);
+
     const rows = [
       ["node", event.node],
       ["layer", event.layer],
@@ -744,6 +884,67 @@ _VIEWER_JS = """(function () {
       const pre = document.createElement("pre");
       pre.textContent = event.packet_tree.join("\\n");
       refs.decodePane.appendChild(pre);
+    }
+  }
+
+  function renderWorkbook(currentEvent) {
+    refs.workbookPane.innerHTML = "";
+
+    if (!data.lab) {
+      refs.workbookPane.innerHTML = '<p class="empty">No lab workbook selected. Re-run with --lab labXX.</p>';
+      return;
+    }
+
+    const goal = document.createElement("p");
+    goal.className = "decode-summary";
+    goal.textContent = data.lab.goal ? `goal: ${data.lab.goal}` : `lab: ${data.lab.id || "(unknown)"}`;
+    refs.workbookPane.appendChild(goal);
+
+    const checkpoints = Array.isArray(data.lab.checkpoints) ? data.lab.checkpoints : [];
+    if (checkpoints.length > 0) {
+      const heading = document.createElement("p");
+      heading.className = "decode-summary";
+      heading.textContent = "checkpoints:";
+      refs.workbookPane.appendChild(heading);
+
+      const list = document.createElement("ul");
+      for (const checkpoint of checkpoints) {
+        const item = document.createElement("li");
+        item.textContent = String(checkpoint);
+        list.appendChild(item);
+      }
+      refs.workbookPane.appendChild(list);
+    }
+
+    const phaseSummary = Array.isArray(data.lab.phase_summary) ? data.lab.phase_summary : [];
+    if (phaseSummary.length > 0) {
+      const phaseHeading = document.createElement("p");
+      phaseHeading.className = "decode-summary";
+      phaseHeading.textContent = "phase coverage:";
+      refs.workbookPane.appendChild(phaseHeading);
+
+      const wrap = document.createElement("div");
+      for (const entry of phaseSummary) {
+        const chip = document.createElement("span");
+        chip.className = "phase-chip";
+        const phaseName = entry && entry.phase ? entry.phase : "Phase";
+        const count = entry && entry.count !== undefined ? entry.count : "?";
+        chip.textContent = `${phaseName}: ${count}`;
+        if (currentEvent && currentEvent.phase_label === phaseName) {
+          chip.style.borderColor = "var(--accent)";
+          chip.style.background = "var(--accent-soft)";
+          chip.style.fontWeight = "700";
+        }
+        wrap.appendChild(chip);
+      }
+      refs.workbookPane.appendChild(wrap);
+    }
+
+    if (currentEvent && currentEvent.phase_label) {
+      const active = document.createElement("p");
+      active.className = "decode-summary";
+      active.textContent = `current phase: ${currentEvent.phase_label}`;
+      refs.workbookPane.appendChild(active);
     }
   }
 
@@ -795,6 +996,182 @@ _VIEWER_JS = """(function () {
   function formatEventLine(event) {
     const packet = event.packet_id ? ` packet=${event.packet_id}` : "";
     return `seq=${event.seq} t=${event.sim_time_ms}ms ${event.node} ${event.layer}/${event.event_type}${packet}`;
+  }
+
+  function explainEvent(event) {
+    const details = event.details || {};
+
+    if (event.event_type === "FRAME_DROP") {
+      const reason = details.drop_reason || "unspecified reason";
+      return `frame dropped because ${reason}`;
+    }
+    if (event.event_type === "FRAME_ENQUEUE") {
+      const srcNode = details.src_node || event.node;
+      const srcIf = details.src_if || event.egress_if || "?";
+      const dstNode = details.dst_node || "?";
+      const dstIf = details.dst_if || "?";
+      return `queued from ${srcNode}:${srcIf} to ${dstNode}:${dstIf}`;
+    }
+    if (event.event_type === "ROUTE_SELECT") {
+      if (!details.selected_prefix) {
+        return "no route selected";
+      }
+      return `selected ${details.selected_prefix} using deterministic tie-break`;
+    }
+    if (event.event_type === "FIB_FORWARD") {
+      const egress = details.egress_if || event.egress_if || "?";
+      return `forwarded via ${egress}`;
+    }
+    if (event.event_type === "ENCAP_PUSH") {
+      return `encapsulated inner ${details.inner_proto || "payload"} with ${details.outer_proto || "tunnel header"}`;
+    }
+    if (event.event_type === "ENCAP_POP") {
+      return `removed outer ${details.outer_proto || "tunnel header"} to expose ${details.inner_proto || "payload"}`;
+    }
+    if (event.event_type === "CRYPTO_ENCRYPT") {
+      return `encrypted packet with ${details.transform || "crypto transform"} (spi=${details.spi || "?"})`;
+    }
+    if (event.event_type === "CRYPTO_DECRYPT") {
+      return `decrypted packet with ${details.transform || "crypto transform"} (spi=${details.spi || "?"})`;
+    }
+    if (event.event_type === "L2_FLOOD") {
+      return "flooded due to unknown or broadcast destination";
+    }
+    if (event.event_type === "L2_UNICAST_FORWARD") {
+      return `unicast forwarding decision to ${details.egress_interface || event.egress_if || "known egress"}`;
+    }
+    if (event.event_type === "STP_ROOT_CHANGE") {
+      return `STP root changed to ${details.new_root_id || "unknown root"}`;
+    }
+    if (event.event_type === "STP_PORT_ROLE_CHANGE") {
+      return `STP role/state update on ${details.if_name || event.ingress_if || event.egress_if || "port"}`;
+    }
+    if (event.event_type === "MAC_LEARN") {
+      return `learned source MAC ${details.mac || "unknown"} on ${details.interface || event.ingress_if || "port"}`;
+    }
+    if (event.event_type === "BGP_OPEN_RX") {
+      return `received BGP OPEN from ${details.peer_id || "peer"} (asn=${details.open_asn || "?"})`;
+    }
+    if (event.event_type === "BGP_SESSION_CHANGE") {
+      return `BGP peer ${details.peer_id || "peer"} changed ${details.old_state || "?"}->${details.new_state || "?"}`;
+    }
+    if (event.event_type === "BGP_UPDATE_RX") {
+      return `BGP update received for ${details.prefix || "prefix"} via ${details.next_hop || "next-hop"}`;
+    }
+    if (event.event_type === "BGP_BEST_PATH") {
+      if (!details.selected_next_hop) {
+        return `no BGP best-path candidate for ${details.prefix || "prefix"}`;
+      }
+      return `selected BGP best path for ${details.prefix || "prefix"} via ${details.selected_next_hop}`;
+    }
+    if (event.event_type === "BGP_UPDATE_EXPORT") {
+      return `exported BGP route ${details.prefix || "prefix"} to ${details.peer_id || "peer"}`;
+    }
+    if (event.event_type === "OSPF_HELLO_RX") {
+      return `OSPF hello from ${details.neighbor_id || "neighbor"} (${details.result || "processed"})`;
+    }
+    if (event.event_type === "OSPF_NEIGHBOR_CHANGE") {
+      return `OSPF neighbor ${details.neighbor_id || "neighbor"} ${details.old_state || "?"}->${details.new_state || "?"}`;
+    }
+    if (event.event_type === "OSPF_LSA_INSTALL") {
+      return `OSPF LSA install decision for ${details.advertising_router || "router"} (installed=${details.installed})`;
+    }
+    if (event.event_type === "OSPF_SPF_RUN") {
+      return `OSPF SPF run complete (reachable=${details.reachable_nodes || "?"})`;
+    }
+    if (event.event_type === "ISIS_LSP_INSTALL") {
+      return `IS-IS LSP level ${details.level || "?"} from ${details.system_id || "system"} (installed=${details.installed})`;
+    }
+    if (event.event_type === "ISIS_SPF_RUN") {
+      return `IS-IS SPF level ${details.level || "?"} complete (reachable=${details.reachable_nodes || "?"})`;
+    }
+    if (event.event_type === "NAT_SESSION_CREATE") {
+      return `created NAT session ${details.inside_ip || "inside"}:${details.inside_port || "?"} -> ${details.translated_ip || "public"}:${details.translated_port || "?"}`;
+    }
+    if (event.event_type === "NAT_TRANSLATE_OUTBOUND") {
+      if (details.action === "translate") {
+        return `translated outbound flow to ${details.translated_ip || "public"}:${details.translated_port || "?"}`;
+      }
+      return `outbound NAT ${details.action || "decision"} because ${details.reason || "policy"}`;
+    }
+    if (event.event_type === "NAT_TRANSLATE_INBOUND") {
+      if (details.action === "translate") {
+        return `translated inbound flow using ${details.decision || "session/rule"}`;
+      }
+      return `inbound NAT drop because ${details.reason || "validation failed"}`;
+    }
+    if (event.event_type === "NAT_SESSION_EXPIRE") {
+      return `expired NAT session ${details.inside_ip || "inside"}:${details.inside_port || "?"}`;
+    }
+    if (event.event_type === "ACL_EVALUATE") {
+      if (details.matched_seq === null || details.matched_seq === undefined) {
+        return `ACL decision ${details.decision || "deny"} via implicit deny`;
+      }
+      return `ACL decision ${details.decision || "permit"} matched rule ${details.matched_seq}`;
+    }
+    if (event.event_type === "QOS_REMARK") {
+      return `remarked DSCP ${details.old_dscp || "?"} -> ${details.new_dscp || "?"}`;
+    }
+    if (event.event_type === "QOS_ENQUEUE") {
+      if (details.action === "enqueue") {
+        return `enqueued into ${details.queue || "queue"} (depth=${details.depth || "?"})`;
+      }
+      return `queue drop in ${details.queue || "queue"} because ${details.reason || "queue_full"}`;
+    }
+    if (event.event_type === "QOS_DEQUEUE") {
+      return `dequeued from ${details.queue || "queue"} (remaining=${details.remaining_depth || "?"})`;
+    }
+    if (event.event_type === "ARP_CACHE_LEARN") {
+      return `learned ARP ${details.sender_ip || "ip"} -> ${details.sender_mac || "mac"}`;
+    }
+    if (event.event_type === "ARP_REQUEST_RX") {
+      return `received ARP request for ${details.target_ip || "target"}`;
+    }
+    if (event.event_type === "ARP_REPLY_TX") {
+      return `sent ARP reply ${details.sender_ip || "ip"} is-at ${details.sender_mac || "mac"}`;
+    }
+    if (event.event_type === "BFD_CONTROL_RX") {
+      return `BFD control rx from ${details.peer_id || "peer"} (${details.result || "processed"})`;
+    }
+    if (event.event_type === "BFD_CONTROL_TX") {
+      return `BFD control tx to ${details.peer_id || "peer"} state=${details.state || "?"}`;
+    }
+    if (event.event_type === "BFD_STATE_CHANGE") {
+      return `BFD state ${details.old_state || "?"}->${details.new_state || "?"} for ${details.peer_id || "peer"}`;
+    }
+    if (event.event_type === "BFD_TIMEOUT") {
+      return `BFD timeout for ${details.peer_id || "peer"} (detect=${details.detect_time_ms || "?"}ms)`;
+    }
+    if (event.event_type === "IPSEC_POLICY_EVALUATE") {
+      return `IPsec ${details.direction || "flow"} policy decision=${details.action || "?"} (${details.reason || "policy"})`;
+    }
+    if (event.event_type === "IPSEC_SA_LOOKUP") {
+      return `IPsec SA lookup spi=${details.spi === null || details.spi === undefined ? "none" : details.spi} result=${details.result || "?"}`;
+    }
+    if (event.event_type === "RIB_CANDIDATE_EVALUATE") {
+      if (details.candidate_rank === null || details.candidate_rank === undefined) {
+        return `RIB has ${details.candidate_count || 0} candidate(s) for ${details.prefix || "prefix"}`;
+      }
+      return `RIB candidate #${details.candidate_rank} for ${details.prefix || "prefix"} (${details.protocol || "protocol"})`;
+    }
+    if (event.event_type === "RIB_ROUTE_INSTALL") {
+      return `installed ${details.prefix || "prefix"} into FIB via ${details.egress_if || "egress"} nh=${details.resolved_next_hop || "?"}`;
+    }
+    if (event.event_type === "RIB_ROUTE_SKIP") {
+      return `skipped route for ${details.prefix || "prefix"} because ${details.reason || "validation failed"}`;
+    }
+    return "event recorded for trace correlation";
+  }
+
+  function parseOptionalNumber(rawValue) {
+    if (typeof rawValue !== "string" || rawValue.trim() === "") {
+      return null;
+    }
+    const parsed = Number(rawValue);
+    if (!Number.isFinite(parsed)) {
+      return null;
+    }
+    return parsed;
   }
 
   function togglePlayback() {

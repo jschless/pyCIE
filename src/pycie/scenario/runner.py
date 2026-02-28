@@ -25,9 +25,22 @@ class ScenarioRunner:
     def run(self, scenario: Scenario) -> ScenarioResult:
         """Run a full scenario and evaluate all expectations."""
         self.capability_matrix.for_lab(scenario.lab_id)
+        self._known_nodes = set(scenario.topology.nodes)
+        self._known_links = {
+            self._normalized_link(left, right)
+            for left, right in scenario.topology.links
+        }
         self._events: list[dict[str, Any]] = []
         self._state: dict[str, Any] = {
             "routes": self._initial_routes(scenario.metadata),
+            "topology": {
+                "nodes": sorted(self._known_nodes),
+                "links_up": {
+                    self._link_key(link): True
+                    for link in sorted(self._known_links)
+                },
+            },
+            "bgp_peers": {},
             "convergence": {
                 "failure_start_ms": None,
                 "converged_at_ms": None,
@@ -69,17 +82,48 @@ class ScenarioRunner:
         convergence["last_action_ms"] = at_ms
 
         if action_enum == ScenarioActionType.FAIL_LINK:
+            left = self._expect_endpoint(params, "a")
+            right = self._expect_endpoint(params, "b")
+            link = self._normalized_link(left, right)
+            if link not in self._known_links:
+                raise ValueError(f"fail_link references unknown link {left!r} <-> {right!r}")
             if convergence["failure_start_ms"] is None:
                 convergence["failure_start_ms"] = at_ms
-            self._state["last_failed_link"] = {"a": params.get("a"), "b": params.get("b")}
+            self._state["topology"]["links_up"][self._link_key(link)] = False
+            self._state["last_failed_link"] = {"a": left, "b": right}
+            return
+
+        if action_enum == ScenarioActionType.RECOVER_LINK:
+            left = self._expect_endpoint(params, "a")
+            right = self._expect_endpoint(params, "b")
+            link = self._normalized_link(left, right)
+            if link not in self._known_links:
+                raise ValueError(f"recover_link references unknown link {left!r} <-> {right!r}")
+            self._state["topology"]["links_up"][self._link_key(link)] = True
+            self._state["last_recovered_link"] = {"a": left, "b": right}
             return
 
         if action_enum == ScenarioActionType.FAIL_BGP_PEER:
+            node = self._expect_node(params, "node")
+            peer = self._expect_node(params, "peer")
+            peer_pair = self._normalized_link(node, peer)
             if convergence["failure_start_ms"] is None:
                 convergence["failure_start_ms"] = at_ms
+            self._state["bgp_peers"][self._link_key(peer_pair)] = False
             self._state["bgp_peer_failed"] = {
-                "node": params.get("node"),
-                "peer": params.get("peer"),
+                "node": node,
+                "peer": peer,
+            }
+            return
+
+        if action_enum == ScenarioActionType.RECOVER_BGP_PEER:
+            node = self._expect_node(params, "node")
+            peer = self._expect_node(params, "peer")
+            peer_pair = self._normalized_link(node, peer)
+            self._state["bgp_peers"][self._link_key(peer_pair)] = True
+            self._state["bgp_peer_recovered"] = {
+                "node": node,
+                "peer": peer,
             }
             return
 
@@ -164,6 +208,30 @@ class ScenarioRunner:
         if not isinstance(selector, str) or not selector:
             raise ValueError("route_set_present/route_set_absent requires params.selector")
         return selector
+
+    def _expect_endpoint(self, params: dict[str, Any], key: str) -> str:
+        endpoint = params.get(key)
+        if not isinstance(endpoint, str) or not endpoint:
+            raise ValueError(f"{key} must be a non-empty endpoint string")
+        if endpoint not in {value for link in self._known_links for value in link}:
+            raise ValueError(f"unknown endpoint {endpoint!r}")
+        return endpoint
+
+    def _expect_node(self, params: dict[str, Any], key: str) -> str:
+        node = params.get(key)
+        if not isinstance(node, str) or not node:
+            raise ValueError(f"{key} must be a non-empty node id")
+        if node not in self._known_nodes:
+            raise ValueError(f"unknown node {node!r}")
+        return node
+
+    @staticmethod
+    def _normalized_link(left: str, right: str) -> tuple[str, str]:
+        return (left, right) if left <= right else (right, left)
+
+    @staticmethod
+    def _link_key(link: tuple[str, str]) -> str:
+        return f"{link[0]}<->{link[1]}"
 
     @staticmethod
     def _initial_routes(metadata: dict[str, Any]) -> dict[str, bool]:

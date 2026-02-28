@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 from pycie.sim.network import Frame
+from pycie.telemetry.events import EventType, Layer
 
 from .base import ProtocolBase
 
@@ -78,12 +79,24 @@ class OSPFProcess(ProtocolBase):
     def process_hello(self, ingress_if: str, hello: OSPFHello) -> None:
         """Update neighbor state machine on hello reception."""
         if hello.area_id != self.area_id:
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.OSPF_HELLO_RX,
+                ingress_if=ingress_if,
+                details={
+                    "neighbor_id": hello.router_id,
+                    "hello_area": hello.area_id,
+                    "local_area": self.area_id,
+                    "result": "area_mismatch",
+                },
+            )
             return
 
         neighbor = self.neighbors.get(hello.router_id)
         if neighbor is None:
             neighbor = OSPFNeighbor(router_id=hello.router_id)
             self.neighbors[hello.router_id] = neighbor
+        old_state = OSPFNeighborState(neighbor.state)
 
         if self.router_id in hello.neighbors:
             neighbor.state = OSPFNeighborState.FULL
@@ -92,6 +105,34 @@ class OSPFProcess(ProtocolBase):
 
         neighbor.dead_interval_ms = hello.dead_interval_ms
         neighbor.last_hello_ms = self.now_ms if hasattr(self, "device") else 0.0
+        new_state = OSPFNeighborState(neighbor.state)
+
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.OSPF_HELLO_RX,
+            ingress_if=ingress_if,
+            details={
+                "neighbor_id": hello.router_id,
+                "hello_area": hello.area_id,
+                "local_area": self.area_id,
+                "neighbor_listed_self": self.router_id in hello.neighbors,
+                "old_state": old_state.value,
+                "new_state": new_state.value,
+                "result": "accepted",
+            },
+        )
+        if old_state != new_state:
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.OSPF_NEIGHBOR_CHANGE,
+                ingress_if=ingress_if,
+                details={
+                    "neighbor_id": hello.router_id,
+                    "old_state": old_state.value,
+                    "new_state": new_state.value,
+                    "reason": "two_way_seen" if self.router_id in hello.neighbors else "one_way_hello",
+                },
+            )
 
     def originate_router_lsa(self) -> RouterLSA:
         """Create a self-originated router LSA from local links."""
@@ -114,15 +155,42 @@ class OSPFProcess(ProtocolBase):
     def install_lsa(self, lsa: RouterLSA) -> bool:
         """Install a newer LSA and return whether LSDB changed."""
         current = self.lsdb.get(lsa.advertising_router)
+        installed = False
+        reason = "stale_or_equal_sequence"
         if current is None or lsa.sequence > current.sequence:
             self.lsdb[lsa.advertising_router] = lsa
-            return True
-        return False
+            installed = True
+            reason = "new_lsa" if current is None else "newer_sequence"
+
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.OSPF_LSA_INSTALL,
+            details={
+                "advertising_router": lsa.advertising_router,
+                "lsa_id": lsa.lsa_id,
+                "sequence": lsa.sequence,
+                "previous_sequence": None if current is None else current.sequence,
+                "link_count": len(lsa.links),
+                "installed": installed,
+                "reason": reason,
+            },
+        )
+        return installed
 
     def run_spf(self) -> dict[str, tuple[int, str | None]]:
         """Compute shortest paths and return next-hop view per router ID."""
         if self.router_id not in self.lsdb:
-            return {self.router_id: (0, None)}
+            result = {self.router_id: (0, None)}
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.OSPF_SPF_RUN,
+                details={
+                    "router_id": self.router_id,
+                    "reachable_nodes": len(result),
+                    "reason": "local_lsa_missing",
+                },
+            )
+            return result
 
         distances: dict[str, int] = {self.router_id: 0}
         first_hop: dict[str, str | None] = {self.router_id: None}
@@ -153,10 +221,21 @@ class OSPFProcess(ProtocolBase):
                     ):
                         first_hop[neighbor] = candidate_first_hop
 
-        return {
+        output = {
             node: (distances[node], first_hop.get(node))
             for node in sorted(distances)
         }
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.OSPF_SPF_RUN,
+            details={
+                "router_id": self.router_id,
+                "reachable_nodes": len(output),
+                "lsdb_nodes": len(self.lsdb),
+                "reason": "spf_complete",
+            },
+        )
+        return output
 
     def compute_routing_table(self) -> dict[str, str | None]:
         """Build destination -> next-hop map from SPF output."""

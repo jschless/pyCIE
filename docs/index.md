@@ -37,6 +37,10 @@ fast onboarding for your first lab, or textbook-style progression for deeper pro
     <strong>Labs Reference</strong>
     Full lab guides rendered directly from lab README sources.
   </a>
+  <a class="link-card" href="labs/pedagogical_overview/">
+    <strong>Pedagogical Lab Overview</strong>
+    Detailed lab intent, implementation steps, and expected learning outcomes.
+  </a>
   <a class="link-card" href="usage/">
     <strong>Usage Guide</strong>
     CLI commands, workflows, and troubleshooting.
@@ -62,6 +66,7 @@ fast onboarding for your first lab, or textbook-style progression for deeper pro
 
 - [Architecture map](architecture)
 - [Labs reference](labs/index)
+- [Pedagogical lab overview](labs/pedagogical_overview)
 - [Standards index](standards)
 - [Roadmap and backlog](roadmap)
 - [Docs site workflow](docs_site)

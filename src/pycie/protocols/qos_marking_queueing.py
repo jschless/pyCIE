@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 
+from pycie.telemetry.events import EventType, Layer
+
 from .base import ProtocolBase
 
 
@@ -41,7 +43,14 @@ class QoSMarkingQueueingProcess(ProtocolBase):
 
     def remark(self, packet: QoSPacket, *, new_dscp: int) -> QoSPacket:
         """Apply policy marking to a packet copy."""
-        return replace(packet, dscp=new_dscp)
+        remarked = replace(packet, dscp=new_dscp)
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.QOS_REMARK,
+            packet_id=packet.packet_id,
+            details={"old_dscp": packet.dscp, "new_dscp": new_dscp},
+        )
+        return remarked
 
     def enqueue(self, packet: QoSPacket) -> tuple[bool, str | None]:
         """Classify and enqueue packet, dropping when queue is full."""
@@ -49,8 +58,33 @@ class QoSMarkingQueueingProcess(ProtocolBase):
         limit = self.queue_limits.get(queue, 0)
         current = self.queues.setdefault(queue, [])
         if len(current) >= limit:
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.QOS_ENQUEUE,
+                packet_id=packet.packet_id,
+                details={
+                    "action": "drop",
+                    "reason": "queue_full",
+                    "queue": queue,
+                    "depth": len(current),
+                    "limit": limit,
+                    "dscp": packet.dscp,
+                },
+            )
             return False, "queue_full"
         current.append(packet)
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.QOS_ENQUEUE,
+            packet_id=packet.packet_id,
+            details={
+                "action": "enqueue",
+                "queue": queue,
+                "depth": len(current),
+                "limit": limit,
+                "dscp": packet.dscp,
+            },
+        )
         return True, None
 
     def dequeue(self) -> QoSPacket | None:
@@ -71,6 +105,16 @@ class QoSMarkingQueueingProcess(ProtocolBase):
                 self.credits[queue] -= 1
                 if self.credits[queue] <= 0 or not packets:
                     self.cursor = (self.cursor + 1) % queue_count
+                self.emit_trace(
+                    layer=Layer.L3,
+                    event_type=EventType.QOS_DEQUEUE,
+                    packet_id=packet.packet_id,
+                    details={
+                        "queue": queue,
+                        "remaining_depth": len(packets),
+                        "dscp": packet.dscp,
+                    },
+                )
                 return packet
 
             self.credits[queue] = 0

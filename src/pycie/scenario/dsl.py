@@ -9,7 +9,9 @@ from typing import Any
 
 class ScenarioActionType(StrEnum):
     FAIL_LINK = "fail_link"
+    RECOVER_LINK = "recover_link"
     FAIL_BGP_PEER = "fail_bgp_peer"
+    RECOVER_BGP_PEER = "recover_bgp_peer"
     ROUTE_SET_PRESENT = "route_set_present"
     ROUTE_SET_ABSENT = "route_set_absent"
     MARK_CONVERGED = "mark_converged"

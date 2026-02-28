@@ -46,6 +46,54 @@ def test_outbound_pool_exhaustion_returns_error() -> None:
     assert reason == "nat_pool_exhausted"
 
 
+def test_outbound_inside_to_inside_traffic_is_not_translated() -> None:
+    nat = NAT44Pipeline()
+    packet = _ipv4_packet("10.0.0.10", "10.0.0.20")
+
+    translated, reason = nat.translate_outbound(packet, now_ms=1000)
+
+    assert reason is None
+    assert translated is not None
+    ipv4 = translated.headers[0]
+    assert isinstance(ipv4, IPv4Header)
+    assert ipv4.src_ip == "10.0.0.10"
+    assert translated.metadata.get("nat_direction") is None
+    assert nat.sessions == {}
+
+
+def test_outbound_translation_preserves_ipv4_fragment_fields() -> None:
+    nat = NAT44Pipeline(public_ip="203.0.113.10")
+    packet = PacketStack(
+        headers=[
+            IPv4Header(
+                src_ip="10.0.0.10",
+                dst_ip="198.51.100.20",
+                protocol=6,
+                ttl=61,
+                dscp=12,
+                identification=12345,
+                flags=frozenset({"DF"}),
+                fragment_offset=80,
+                total_length=1400,
+            )
+        ],
+        metadata={"l4_proto": "tcp", "src_port": 12000, "dst_port": 443},
+    )
+
+    translated, reason = nat.translate_outbound(packet, now_ms=1000)
+
+    assert reason is None
+    assert translated is not None
+    ipv4 = translated.headers[0]
+    assert isinstance(ipv4, IPv4Header)
+    assert ipv4.src_ip == "203.0.113.10"
+    assert ipv4.dst_ip == "198.51.100.20"
+    assert ipv4.identification == 12345
+    assert ipv4.flags == frozenset({"DF"})
+    assert ipv4.fragment_offset == 80
+    assert ipv4.total_length == 1400
+
+
 def test_inbound_mismatched_return_path_is_rejected() -> None:
     nat = NAT44Pipeline(public_ip="203.0.113.10")
     outbound, _ = nat.translate_outbound(_ipv4_packet("10.1.1.10", "198.51.100.20", dst_port=80), now_ms=1000)

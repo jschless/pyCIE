@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 from pycie.sim.network import Frame
+from pycie.telemetry.events import EventType, Layer
+from pycie.telemetry.packet import ensure_packet_id
 
 from .base import ProtocolBase
 
@@ -44,7 +46,7 @@ class ARPProcess(ProtocolBase):
             return
         if not isinstance(frame.payload, ARPMessage):
             return
-        self.process_message(ingress_if, frame.payload)
+        self.process_message(ingress_if, frame.payload, packet_id=ensure_packet_id(frame))
 
     def build_request(self, sender_ip: str, sender_mac: str, target_ip: str) -> ARPMessage:
         """Construct an ARP request."""
@@ -72,12 +74,35 @@ class ARPProcess(ProtocolBase):
             target_mac=target_mac,
         )
 
-    def process_message(self, ingress_if: str, msg: ARPMessage) -> None:
+    def process_message(self, ingress_if: str, msg: ARPMessage, *, packet_id: str | None = None) -> None:
         """Update ARP state and emit response actions when needed."""
         self.ip_to_mac[msg.sender_ip] = msg.sender_mac
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.ARP_CACHE_LEARN,
+            ingress_if=ingress_if,
+            packet_id=packet_id,
+            details={
+                "sender_ip": msg.sender_ip,
+                "sender_mac": msg.sender_mac,
+                "target_ip": msg.target_ip,
+                "opcode": ARPOpcode(msg.opcode).value,
+            },
+        )
 
         if ARPOpcode(msg.opcode) != ARPOpcode.REQUEST:
             return
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.ARP_REQUEST_RX,
+            ingress_if=ingress_if,
+            packet_id=packet_id,
+            details={
+                "sender_ip": msg.sender_ip,
+                "sender_mac": msg.sender_mac,
+                "target_ip": msg.target_ip,
+            },
+        )
         local_ip = self.local_ips.get(ingress_if)
         local_mac = self.local_macs.get(ingress_if)
         if local_ip is None or local_mac is None:
@@ -92,3 +117,15 @@ class ARPProcess(ProtocolBase):
             target_mac=msg.sender_mac,
         )
         self.outbound_messages.append((ingress_if, reply))
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.ARP_REPLY_TX,
+            egress_if=ingress_if,
+            packet_id=packet_id,
+            details={
+                "sender_ip": local_ip,
+                "sender_mac": local_mac,
+                "target_ip": msg.sender_ip,
+                "target_mac": msg.sender_mac,
+            },
+        )

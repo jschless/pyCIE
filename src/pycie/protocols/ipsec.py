@@ -77,15 +77,83 @@ class IPsecProcess(ProtocolBase):
 
         policy = self._match_policy(ip_header.src_ip, ip_header.dst_ip)
         if policy is None:
+            self.emit_trace(
+                layer=Layer.CRYPTO,
+                event_type=EventType.IPSEC_POLICY_EVALUATE,
+                packet_id=packet_id,
+                details={
+                    "direction": "outbound",
+                    "action": IPSecPolicyAction.BYPASS.value,
+                    "reason": "no_policy_match",
+                    "src_ip": ip_header.src_ip,
+                    "dst_ip": ip_header.dst_ip,
+                },
+            )
             return IPSecPolicyAction.BYPASS, packet.clone()
 
         action = IPSecPolicyAction(policy.action)
         if action == IPSecPolicyAction.DROP:
+            self.emit_trace(
+                layer=Layer.CRYPTO,
+                event_type=EventType.IPSEC_POLICY_EVALUATE,
+                packet_id=packet_id,
+                details={
+                    "direction": "outbound",
+                    "action": action.value,
+                    "policy_id": policy.policy_id,
+                    "reason": "policy_drop",
+                    "src_ip": ip_header.src_ip,
+                    "dst_ip": ip_header.dst_ip,
+                },
+            )
+            self.emit_trace(
+                layer=Layer.CRYPTO,
+                event_type=EventType.FRAME_DROP,
+                packet_id=packet_id,
+                details={"drop_reason": "policy_drop", "policy_id": policy.policy_id},
+            )
             return IPSecPolicyAction.DROP, None
         if action == IPSecPolicyAction.BYPASS:
+            self.emit_trace(
+                layer=Layer.CRYPTO,
+                event_type=EventType.IPSEC_POLICY_EVALUATE,
+                packet_id=packet_id,
+                details={
+                    "direction": "outbound",
+                    "action": action.value,
+                    "policy_id": policy.policy_id,
+                    "reason": "policy_bypass",
+                    "src_ip": ip_header.src_ip,
+                    "dst_ip": ip_header.dst_ip,
+                },
+            )
             return IPSecPolicyAction.BYPASS, packet.clone()
+        self.emit_trace(
+            layer=Layer.CRYPTO,
+            event_type=EventType.IPSEC_POLICY_EVALUATE,
+            packet_id=packet_id,
+            details={
+                "direction": "outbound",
+                "action": action.value,
+                "policy_id": policy.policy_id,
+                "reason": "policy_protect",
+                "src_ip": ip_header.src_ip,
+                "dst_ip": ip_header.dst_ip,
+            },
+        )
 
         if policy.sa_spi is None:
+            self.emit_trace(
+                layer=Layer.CRYPTO,
+                event_type=EventType.IPSEC_SA_LOOKUP,
+                packet_id=packet_id,
+                details={
+                    "direction": "outbound",
+                    "spi": None,
+                    "result": "missing_spi",
+                    "policy_id": policy.policy_id,
+                },
+            )
             self.emit_trace(
                 layer=Layer.CRYPTO,
                 event_type=EventType.FRAME_DROP,
@@ -97,11 +165,33 @@ class IPsecProcess(ProtocolBase):
         if sa is None:
             self.emit_trace(
                 layer=Layer.CRYPTO,
+                event_type=EventType.IPSEC_SA_LOOKUP,
+                packet_id=packet_id,
+                details={
+                    "direction": "outbound",
+                    "spi": policy.sa_spi,
+                    "result": "miss",
+                    "policy_id": policy.policy_id,
+                },
+            )
+            self.emit_trace(
+                layer=Layer.CRYPTO,
                 event_type=EventType.FRAME_DROP,
                 packet_id=packet_id,
                 details={"drop_reason": "sa_not_found", "spi": policy.sa_spi},
             )
             return IPSecPolicyAction.DROP, None
+        self.emit_trace(
+            layer=Layer.CRYPTO,
+            event_type=EventType.IPSEC_SA_LOOKUP,
+            packet_id=packet_id,
+            details={
+                "direction": "outbound",
+                "spi": sa.spi,
+                "result": "hit",
+                "policy_id": policy.policy_id,
+            },
+        )
 
         protected = packet.clone()
         protected.push_header(ESPHeader(spi=sa.spi, sequence=1, encrypted=True))
@@ -142,6 +232,16 @@ class IPsecProcess(ProtocolBase):
 
         outer = packet.headers[0]
         if not isinstance(outer, IPv4Header) or outer.protocol != 50:
+            self.emit_trace(
+                layer=Layer.CRYPTO,
+                event_type=EventType.IPSEC_POLICY_EVALUATE,
+                packet_id=packet_id,
+                details={
+                    "direction": "inbound",
+                    "action": IPSecPolicyAction.BYPASS.value,
+                    "reason": "not_esp",
+                },
+            )
             return IPSecPolicyAction.BYPASS, packet.clone()
 
         if len(packet.headers) < 2 or not isinstance(packet.headers[1], ESPHeader):
@@ -154,7 +254,18 @@ class IPsecProcess(ProtocolBase):
             return IPSecPolicyAction.DROP, None
 
         esp = packet.headers[1]
-        if esp.spi not in self.sad:
+        sa = self.sad.get(esp.spi)
+        if sa is None:
+            self.emit_trace(
+                layer=Layer.CRYPTO,
+                event_type=EventType.IPSEC_SA_LOOKUP,
+                packet_id=packet_id,
+                details={
+                    "direction": "inbound",
+                    "spi": esp.spi,
+                    "result": "miss",
+                },
+            )
             self.emit_trace(
                 layer=Layer.CRYPTO,
                 event_type=EventType.FRAME_DROP,
@@ -162,9 +273,30 @@ class IPsecProcess(ProtocolBase):
                 details={"drop_reason": "unknown_spi", "spi": esp.spi},
             )
             return IPSecPolicyAction.DROP, None
+        self.emit_trace(
+            layer=Layer.CRYPTO,
+            event_type=EventType.IPSEC_SA_LOOKUP,
+            packet_id=packet_id,
+            details={
+                "direction": "inbound",
+                "spi": esp.spi,
+                "result": "hit",
+            },
+        )
 
         decapped = packet.clone()
         decapped.headers = decapped.headers[2:]
+        self.emit_trace(
+            layer=Layer.CRYPTO,
+            event_type=EventType.IPSEC_POLICY_EVALUATE,
+            packet_id=packet_id,
+            details={
+                "direction": "inbound",
+                "action": IPSecPolicyAction.PROTECT.value,
+                "reason": "sa_validated",
+                "spi": esp.spi,
+            },
+        )
         self.emit_trace(
             layer=Layer.CRYPTO,
             event_type=EventType.CRYPTO_DECRYPT,

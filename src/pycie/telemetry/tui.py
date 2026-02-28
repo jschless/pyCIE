@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import time
 from typing import Any, Sequence
 
-from .trace import TraceEvent
+from .events import EventType, TraceEvent
 
 
 @dataclass
@@ -134,7 +134,7 @@ def _build_screen_lines(events: Sequence[TraceEvent], *, at_index: int, paused: 
     mode = "paused" if paused else "playing"
     lines.append(f"pycie viz tui | q quit | space play/pause | n next | b back | r reset | {mode}")
     lines.append(
-        f"Event {max_index + 1}/{len(events)} at t={current.time_ms:.3f}ms | current={_format_event_brief(current)}"
+        f"Event {max_index + 1}/{len(events)} at t={current.sim_time_ms}ms | current={_format_event_brief(current)}"
     )
     lines.append("")
     lines.append("Topology")
@@ -185,15 +185,18 @@ def _build_screen_lines(events: Sequence[TraceEvent], *, at_index: int, paused: 
 
 
 def _format_event_brief(event: TraceEvent) -> str:
-    parts = [f"{event.time_ms:.3f}ms", event.event_type]
-    if event.node_id is not None:
-        parts.append(f"node={event.node_id}")
+    parts = [f"{event.sim_time_ms}ms", event.event_type.value, f"node={event.node}"]
     if event.packet_id is not None:
         parts.append(f"packet={event.packet_id}")
-    if event.decision is not None:
-        parts.append(f"decision={event.decision}")
-    if event.reason is not None:
-        parts.append(f"reason={event.reason}")
+    decision = event.details.get("decision")
+    if isinstance(decision, str):
+        parts.append(f"decision={decision}")
+    reason = event.details.get("reason")
+    if isinstance(reason, str):
+        parts.append(f"reason={reason}")
+    drop_reason = event.details.get("drop_reason")
+    if isinstance(drop_reason, str):
+        parts.append(f"drop_reason={drop_reason}")
     src, dst = _infer_link_endpoints(event)
     if src is not None and dst is not None:
         parts.append(f"path={src}->{dst}")
@@ -223,8 +226,7 @@ def _extract_topology(events: Sequence[TraceEvent]) -> tuple[list[str], list[tup
     nodes: set[str] = set()
     links: set[tuple[str, str]] = set()
     for event in events:
-        if event.node_id is not None:
-            nodes.add(event.node_id)
+        nodes.add(event.node)
 
         src, dst = _infer_link_endpoints(event)
         if src is None or dst is None:
@@ -240,17 +242,16 @@ def _apply_event(
     node_stats: dict[str, NodeStats],
     link_stats: dict[tuple[str, str], LinkStats],
 ) -> None:
-    if event.node_id is not None:
-        stat = node_stats.setdefault(event.node_id, NodeStats())
-        if event.event_type == "device_tx":
-            stat.tx_count += 1
-        if event.event_type == "device_rx":
-            stat.rx_count += 1
-        if event.decision == "drop":
-            stat.drop_count += 1
-        stat.last_event = event.event_type
-        if event.packet_id is not None:
-            stat.last_packet = event.packet_id
+    stat = node_stats.setdefault(event.node, NodeStats())
+    if event.event_type == EventType.FRAME_TX:
+        stat.tx_count += 1
+    if event.event_type == EventType.FRAME_RX:
+        stat.rx_count += 1
+    if event.event_type == EventType.FRAME_DROP:
+        stat.drop_count += 1
+    stat.last_event = event.event_type.value
+    if event.packet_id is not None:
+        stat.last_packet = event.packet_id
 
     src, dst = _infer_link_endpoints(event)
     if src is None or dst is None:
@@ -260,8 +261,8 @@ def _apply_event(
     link.direction_src = src
     link.direction_dst = dst
     link.packet_id = event.packet_id
-    link.event_type = event.event_type
-    link.time_ms = event.time_ms
+    link.event_type = event.event_type.value
+    link.time_ms = event.sim_time_ms
 
     ethertype = event.details.get("ethertype")
     if isinstance(ethertype, str):
@@ -269,15 +270,18 @@ def _apply_event(
 
 
 def _infer_link_endpoints(event: TraceEvent) -> tuple[str | None, str | None]:
-    if event.event_type == "sim_frame_enqueue":
-        dst = event.details.get("dst_node")
-        if event.node_id is not None and isinstance(dst, str):
-            return event.node_id, dst
-
-    if event.event_type == "sim_frame_deliver":
+    if event.event_type == EventType.FRAME_ENQUEUE:
         src = event.details.get("src_node")
-        if event.node_id is not None and isinstance(src, str):
-            return src, event.node_id
+        dst = event.details.get("dst_node")
+        if isinstance(src, str) and isinstance(dst, str):
+            return src, dst
+        if isinstance(dst, str):
+            return event.node, dst
+
+    if event.event_type == EventType.FRAME_DELIVER:
+        src = event.details.get("src_node")
+        if isinstance(src, str):
+            return src, event.node
 
     return None, None
 

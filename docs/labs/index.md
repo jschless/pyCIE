@@ -1,10 +1,13 @@
 # Labs Reference
 
 This section renders each lab guide directly from `labs/<lab>/README.md`.
+For a deeper workbook-style explanation of each lab's intent and what implementation
+steps are teaching, start with [Pedagogical Lab Overview](pedagogical_overview).
 
 ```{toctree}
 :maxdepth: 1
 
+pedagogical_overview
 lab01_switching
 lab02_stp
 lab03_ospf

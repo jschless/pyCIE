@@ -21,12 +21,14 @@ from pycie.telemetry.events import EventType, Layer
 from pycie.telemetry.render import (
     DetailLevel,
     filter_events,
+    render_explain,
     render_packet_path,
     render_sequence,
     render_stp_summary,
     render_timeline,
     render_topology_snapshot,
 )
+from pycie.telemetry.tui import render_tui_snapshot, run_tui
 from pycie.telemetry.trace import TRACE_OUT_ENV, load_trace_events
 from pycie.telemetry.webviz import write_web_visualization
 
@@ -388,6 +390,19 @@ def cmd_scenario_run(namespace: argparse.Namespace, repo_root: Path) -> int:
     return 0 if result.passed else 1
 
 
+def cmd_scenario_validate(namespace: argparse.Namespace, repo_root: Path) -> int:
+    """Validate one scenario file without executing it."""
+    del repo_root
+    scenario_path = namespace.scenario_file.expanduser().resolve()
+    scenario = load_scenario(scenario_path)
+    print(f"Scenario {scenario.name} ({scenario.lab_id}): VALID")
+    print(
+        f"Topology nodes={len(scenario.topology.nodes)} links={len(scenario.topology.links)} "
+        f"Actions={len(scenario.actions)} Expectations={len(scenario.expectations)}"
+    )
+    return 0
+
+
 def cmd_guide(namespace: argparse.Namespace, repo_root: Path) -> int:
     """Print primary docs and recommended command entry points."""
     del namespace
@@ -424,8 +439,15 @@ def cmd_guide(namespace: argparse.Namespace, repo_root: Path) -> int:
     print("  pycie viz topology --trace traces/lab01.jsonl --packet-id p1")
     print("  pycie viz sequence --trace traces/lab01.jsonl --packet-id p1")
     print("  pycie viz stp --trace traces/lab02.jsonl")
-    print("  pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01")
+    print("  pycie viz explain --trace traces/lab01.jsonl --packet-id p1 --lab lab01")
+    print("  pycie viz tui --trace traces/lab01.jsonl --snapshot")
+    print("  pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01 --lab lab01")
     print("  pycie scenario run labs/scenarios/lab16_dual_failure.json")
+    print("  pycie scenario validate labs/scenarios/lab16_failure_recovery_drill.json")
+    print(
+        "  pycie scenario run labs/scenarios/lab16_failure_recovery_drill.json "
+        "--report md --report-out dist/reports/lab16-recovery.md"
+    )
     print("  pip install -e '.[docs]'")
     print("  sphinx-autobuild docs docs/_build/dirhtml")
     print("  sphinx-build -W -b dirhtml docs docs/_build/dirhtml")
@@ -451,8 +473,11 @@ def cmd_quickstart(namespace: argparse.Namespace, repo_root: Path) -> int:
     print("9) pycie run lab06c --student-src dist/student/src")
     print("10) pycie run lab01 --student-src dist/student/src --trace-out traces/lab01.jsonl")
     print("11) pycie viz replay --trace traces/lab01.jsonl --detail packet")
-    print("12) pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01")
-    print("13) pycie scenario run labs/scenarios/lab16_dual_failure.json")
+    print("12) pycie viz explain --trace traces/lab01.jsonl --packet-id p1 --lab lab01")
+    print("13) pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01 --lab lab01")
+    print("14) pycie scenario run labs/scenarios/lab16_dual_failure.json")
+    print("15) pycie scenario validate labs/scenarios/lab16_failure_recovery_drill.json")
+    print("16) pycie scenario run labs/scenarios/lab16_failure_recovery_drill.json")
     print()
     print("Start Here doc:", repo_root / "docs" / "getting_started.md")
     print("Tutorial map:", repo_root / "docs" / "tutorial" / "index.md")
@@ -516,13 +541,42 @@ def cmd_viz_stp(namespace: argparse.Namespace, repo_root: Path) -> int:
     return 0
 
 
+def cmd_viz_explain(namespace: argparse.Namespace, repo_root: Path) -> int:
+    """Render causal explanation view from filtered trace events."""
+    del repo_root
+    events = _load_filtered_events(namespace)
+    lines = render_explain(
+        events,
+        packet_id=namespace.packet_id,
+        max_events=namespace.max_events,
+        lab=namespace.lab,
+    )
+    print("\n".join(lines))
+    return 0
+
+
+def cmd_viz_tui(namespace: argparse.Namespace, repo_root: Path) -> int:
+    """Run TUI playback or print a deterministic snapshot."""
+    del repo_root
+    events = _load_filtered_events(namespace)
+    if namespace.snapshot:
+        print(render_tui_snapshot(events, at_index=namespace.at_index, paused=True))
+        return 0
+    return run_tui(events, interval_ms=namespace.interval_ms)
+
+
 def cmd_viz_web(namespace: argparse.Namespace, repo_root: Path) -> int:
     """Generate local static HTML viewer assets from trace JSONL."""
     del repo_root
     trace_path = namespace.trace.expanduser().resolve()
     output_dir = namespace.out.expanduser().resolve()
     events = load_trace_events(trace_path)
-    artifacts = write_web_visualization(events, output_dir=output_dir, trace_path=trace_path)
+    artifacts = write_web_visualization(
+        events,
+        output_dir=output_dir,
+        trace_path=trace_path,
+        lab=namespace.lab,
+    )
     print(f"Web viewer generated: {artifacts['index']}")
     print(f"Open this file in a browser: {artifacts['index']}")
     return 0
@@ -670,6 +724,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Optional report output path (default: alongside scenario file)",
     )
     p_scenario_run.set_defaults(func=cmd_scenario_run)
+    p_scenario_validate = scenario_subparsers.add_parser(
+        "validate",
+        help="Validate a scenario JSON file without executing scenario actions",
+    )
+    p_scenario_validate.add_argument("scenario_file", type=Path, help="Path to scenario JSON file")
+    p_scenario_validate.set_defaults(func=cmd_scenario_validate)
 
     p_viz = subparsers.add_parser("viz", help="Trace replay and packet-path visualization")
     viz_subparsers = p_viz.add_subparsers(dest="viz_command", required=True)
@@ -748,9 +808,74 @@ def build_parser() -> argparse.ArgumentParser:
     p_stp.add_argument("--bridge-id", help="Optional bridge-id filter (priority:mac)")
     p_stp.set_defaults(func=cmd_viz_stp)
 
+    p_explain = viz_subparsers.add_parser("explain", help="Explain events in causal, pedagogical form")
+    p_explain.add_argument("--trace", required=True, type=Path, help="Path to JSONL trace file")
+    p_explain.add_argument("--node", help="Node filter")
+    p_explain.add_argument(
+        "--event",
+        action="append",
+        dest="events",
+        help="EventType filter (repeatable or comma-separated)",
+    )
+    p_explain.add_argument(
+        "--layer",
+        action="append",
+        dest="layers",
+        help="Layer filter (repeatable or comma-separated)",
+    )
+    p_explain.add_argument("--packet-id", help="Packet correlation id filter")
+    p_explain.add_argument("--lab", help="Optional lab id (e.g. lab07) for step-grouped narrative")
+    p_explain.add_argument("--from-ms", type=int, help="Start simulation time in ms")
+    p_explain.add_argument("--to-ms", type=int, help="End simulation time in ms")
+    p_explain.add_argument(
+        "--max-events",
+        type=int,
+        default=200,
+        help="Maximum number of events to explain (default: 200)",
+    )
+    p_explain.set_defaults(func=cmd_viz_explain)
+
+    p_tui = viz_subparsers.add_parser("tui", help="Interactive terminal visualization (or snapshot mode)")
+    p_tui.add_argument("--trace", required=True, type=Path, help="Path to JSONL trace file")
+    p_tui.add_argument("--node", help="Node filter")
+    p_tui.add_argument(
+        "--event",
+        action="append",
+        dest="events",
+        help="EventType filter (repeatable or comma-separated)",
+    )
+    p_tui.add_argument(
+        "--layer",
+        action="append",
+        dest="layers",
+        help="Layer filter (repeatable or comma-separated)",
+    )
+    p_tui.add_argument("--packet-id", help="Packet correlation id filter")
+    p_tui.add_argument("--from-ms", type=int, help="Start simulation time in ms")
+    p_tui.add_argument("--to-ms", type=int, help="End simulation time in ms")
+    p_tui.add_argument(
+        "--interval-ms",
+        type=int,
+        default=400,
+        help="Playback interval in ms for interactive mode (default: 400)",
+    )
+    p_tui.add_argument(
+        "--snapshot",
+        action="store_true",
+        help="Print non-interactive snapshot instead of launching curses UI",
+    )
+    p_tui.add_argument(
+        "--at-index",
+        type=int,
+        default=-1,
+        help="Snapshot index (default: last event)",
+    )
+    p_tui.set_defaults(func=cmd_viz_tui)
+
     p_web = viz_subparsers.add_parser("web", help="Generate static HTML trace viewer")
     p_web.add_argument("--trace", required=True, type=Path, help="Path to JSONL trace file")
     p_web.add_argument("--out", required=True, type=Path, help="Output directory for web assets")
+    p_web.add_argument("--lab", help="Optional lab id (e.g. lab21) for phase-aware workbook view")
     p_web.set_defaults(func=cmd_viz_web)
 
     return parser

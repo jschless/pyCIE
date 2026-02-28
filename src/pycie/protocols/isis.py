@@ -6,6 +6,7 @@ import heapq
 from dataclasses import dataclass, field
 
 from pycie.sim.network import Frame
+from pycie.telemetry.events import EventType, Layer
 
 from .base import ProtocolBase
 
@@ -76,16 +77,45 @@ class ISISProcess(ProtocolBase):
         """Install an LSP if it is newer than existing state."""
         key = (lsp.level, lsp.system_id)
         current = self.lsdb.get(key)
+        installed = False
+        reason = "stale_or_equal_sequence"
         if current is None or lsp.sequence > current.sequence:
             self.lsdb[key] = lsp
-            return True
-        return False
+            installed = True
+            reason = "new_lsp" if current is None else "newer_sequence"
+
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.ISIS_LSP_INSTALL,
+            details={
+                "level": lsp.level,
+                "system_id": lsp.system_id,
+                "sequence": lsp.sequence,
+                "previous_sequence": None if current is None else current.sequence,
+                "link_count": len(lsp.links),
+                "overload": lsp.overload,
+                "installed": installed,
+                "reason": reason,
+            },
+        )
+        return installed
 
     def run_spf(self, level: int) -> dict[str, tuple[int, str | None]]:
         """Run Dijkstra for the selected level and return (cost, next-hop)."""
         local = self.lsdb.get((level, self.system_id))
         if local is None:
-            return {self.system_id: (0, None)}
+            result = {self.system_id: (0, None)}
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.ISIS_SPF_RUN,
+                details={
+                    "level": level,
+                    "system_id": self.system_id,
+                    "reachable_nodes": len(result),
+                    "reason": "local_lsp_missing",
+                },
+            )
+            return result
 
         distances: dict[str, int] = {self.system_id: 0}
         first_hop: dict[str, str | None] = {self.system_id: None}
@@ -120,7 +150,19 @@ class ISISProcess(ProtocolBase):
                     ):
                         first_hop[neighbor] = candidate_first_hop
 
-        return {node: (distances[node], first_hop.get(node)) for node in sorted(distances)}
+        output = {node: (distances[node], first_hop.get(node)) for node in sorted(distances)}
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.ISIS_SPF_RUN,
+            details={
+                "level": level,
+                "system_id": self.system_id,
+                "reachable_nodes": len(output),
+                "lsdb_entries_for_level": len([key for key in self.lsdb if key[0] == level]),
+                "reason": "spf_complete",
+            },
+        )
+        return output
 
     def compute_routing_table(self) -> dict[str, tuple[int, str | None, int]]:
         """Return destination -> (cost, next-hop, level)."""

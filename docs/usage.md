@@ -34,6 +34,7 @@ For first-time onboarding, use:
 
 - [`docs/getting_started.md`](getting_started)
 - [`docs/tutorial/index.md`](tutorial/index)
+- [`docs/labs/pedagogical_overview.md`](labs/pedagogical_overview)
 
 ## CLI Quickstart
 
@@ -122,11 +123,31 @@ pycie viz packet --trace traces/lab01.jsonl --packet-id p1 --detail full
 pycie viz topology --trace traces/lab01.jsonl --packet-id p1
 pycie viz sequence --trace traces/lab01.jsonl --packet-id p1 --detail packet
 pycie viz stp --trace traces/lab02.jsonl
-pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01
+pycie viz explain --trace traces/lab01.jsonl --packet-id p1 --lab lab01
+pycie viz web --trace traces/lab01.jsonl --out dist/viz/lab01 --lab lab01
+pycie scenario validate labs/scenarios/lab16_failure_recovery_drill.json
 pycie scenario run labs/scenarios/lab16_dual_failure.json --report json --report-out dist/reports/lab16.json
+pycie scenario run labs/scenarios/lab16_failure_recovery_drill.json --report md --report-out dist/reports/lab16-recovery.md
 ```
 
+Pedagogy-first visualization tip:
+
+1. Use `pycie viz explain --trace <file> --lab labXX` for phase-grouped narrative output.
+2. Use `pycie viz web --trace <file> --out <dir> --lab labXX` to unlock phase filter + workbook prompts.
+
+Capstone scenario workflow tip:
+
+1. Run `scenario validate` first to fail fast on schema issues.
+2. Run `lab16_single_link_failure` to understand basic disruption -> recovery flow.
+3. Run `lab16_failure_recovery_drill` to see explicit failure and restoration actions in one timeline.
+4. Run `lab16_dual_failure` to validate convergence under compounded failures.
+
 ## Recommended learning paths
+
+If you want deeper "why this step exists" context while coding each lab, keep this
+open as a companion reference:
+
+- [Pedagogical Lab Overview](labs/pedagogical_overview)
 
 ### Core protocol sequence
 

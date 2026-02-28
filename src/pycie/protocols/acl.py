@@ -6,6 +6,9 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from ipaddress import ip_address, ip_network
 
+from pycie.telemetry.events import EventType, Layer
+from pycie.telemetry.trace import emit_from_env
+
 
 class ACLAction(StrEnum):
     PERMIT = "permit"
@@ -54,6 +57,7 @@ class ACL:
     """Ordered ACL with first-match semantics and implicit deny."""
 
     rules: list[ACLRule] = field(default_factory=list)
+    trace_node: str = "acl"
 
     def add_rule(self, rule: ACLRule) -> None:
         """Insert or replace a rule by sequence number."""
@@ -69,5 +73,33 @@ class ACL:
         """Return ACL decision with implicit deny when no rule matches."""
         for rule in self.rules:
             if rule.matches(packet):
-                return ACLAction(rule.action)
+                decision = ACLAction(rule.action)
+                emit_from_env(
+                    sim_time_ms=0,
+                    node=self.trace_node,
+                    layer=Layer.L3,
+                    event_type=EventType.ACL_EVALUATE,
+                    details={
+                        "decision": decision.value,
+                        "matched_seq": rule.seq,
+                        "src_ip": packet.src_ip,
+                        "dst_ip": packet.dst_ip,
+                        "protocol": packet.protocol.lower(),
+                    },
+                )
+                return decision
+        emit_from_env(
+            sim_time_ms=0,
+            node=self.trace_node,
+            layer=Layer.L3,
+            event_type=EventType.ACL_EVALUATE,
+            details={
+                "decision": ACLAction.DENY.value,
+                "matched_seq": None,
+                "reason": "implicit_deny",
+                "src_ip": packet.src_ip,
+                "dst_ip": packet.dst_ip,
+                "protocol": packet.protocol.lower(),
+            },
+        )
         return ACLAction.DENY

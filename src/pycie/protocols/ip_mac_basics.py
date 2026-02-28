@@ -32,6 +32,8 @@ class LookupExplanation:
     outgoing_interface: str
     next_hop_ip: str
     connected: bool
+    admin_distance: int
+    metric: int
     reason: str
 
 
@@ -93,6 +95,8 @@ class IPMacBasicsProcess(ProtocolBase):
                         outgoing_interface=interface.if_name,
                         next_hop_ip=destination,
                         connected=True,
+                        admin_distance=0,
+                        metric=0,
                         reason="connected_lpm",
                     )
                 )
@@ -109,6 +113,8 @@ class IPMacBasicsProcess(ProtocolBase):
                     outgoing_interface=route.outgoing_interface,
                     next_hop_ip=route.next_hop,
                     connected=False,
+                    admin_distance=route.admin_distance,
+                    metric=route.metric,
                     reason="static_lpm_ad_metric",
                 )
             )
@@ -120,6 +126,8 @@ class IPMacBasicsProcess(ProtocolBase):
             candidates,
             key=lambda value: (
                 -value.prefix_length,
+                value.admin_distance,
+                value.metric,
                 value.connected is False,
                 value.outgoing_interface,
                 value.next_hop_ip,

@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 
 from pycie.sim.network import Frame
+from pycie.telemetry.events import EventType, Layer
 
 from .base import ProtocolBase
 
@@ -68,12 +69,36 @@ class BFDProcess(ProtocolBase):
         discriminator = self.discriminator_seed + len(self.sessions) + 1
         session = BFDSession(peer_id=peer_id, local_discriminator=discriminator)
         self.sessions[peer_id] = session
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.BFD_STATE_CHANGE,
+            details={
+                "peer_id": peer_id,
+                "old_state": None,
+                "new_state": BFDState.DOWN.value,
+                "reason": "session_opened",
+                "local_discriminator": discriminator,
+            },
+        )
         return session
 
     def receive_control(self, peer_id: str, packet: BFDControl) -> None:
         """Apply session state transitions on inbound control packet."""
         session = self.open_session(peer_id)
+        old_state = BFDState(session.state)
         if packet.your_discriminator != session.local_discriminator:
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.BFD_CONTROL_RX,
+                details={
+                    "peer_id": peer_id,
+                    "result": "discriminator_mismatch",
+                    "expected_your_discriminator": session.local_discriminator,
+                    "received_your_discriminator": packet.your_discriminator,
+                    "my_discriminator": packet.my_discriminator,
+                    "state": BFDState(packet.state).value,
+                },
+            )
             return
 
         session.remote_discriminator = packet.my_discriminator
@@ -91,11 +116,36 @@ class BFDProcess(ProtocolBase):
             )
         elif packet_state == BFDState.INIT:
             session.state = BFDState.INIT
+        new_state = BFDState(session.state)
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.BFD_CONTROL_RX,
+            details={
+                "peer_id": peer_id,
+                "result": "accepted",
+                "my_discriminator": packet.my_discriminator,
+                "your_discriminator": packet.your_discriminator,
+                "packet_state": packet_state.value,
+                "old_state": old_state.value,
+                "new_state": new_state.value,
+            },
+        )
+        if old_state != new_state:
+            self.emit_trace(
+                layer=Layer.L3,
+                event_type=EventType.BFD_STATE_CHANGE,
+                details={
+                    "peer_id": peer_id,
+                    "old_state": old_state.value,
+                    "new_state": new_state.value,
+                    "reason": f"rx_{packet_state.value.lower()}",
+                },
+            )
 
     def transmit_control(self, peer_id: str) -> BFDControl:
         """Build an outbound BFD control packet for a peer session."""
         session = self.open_session(peer_id)
-        return BFDControl(
+        control = BFDControl(
             your_discriminator=session.remote_discriminator,
             my_discriminator=session.local_discriminator,
             state=session.state,
@@ -103,6 +153,20 @@ class BFDProcess(ProtocolBase):
             required_min_rx_ms=session.required_min_rx_ms,
             detect_mult=session.detect_mult,
         )
+        self.emit_trace(
+            layer=Layer.L3,
+            event_type=EventType.BFD_CONTROL_TX,
+            details={
+                "peer_id": peer_id,
+                "my_discriminator": control.my_discriminator,
+                "your_discriminator": control.your_discriminator,
+                "state": BFDState(control.state).value,
+                "desired_min_tx_ms": control.desired_min_tx_ms,
+                "required_min_rx_ms": control.required_min_rx_ms,
+                "detect_mult": control.detect_mult,
+            },
+        )
+        return control
 
     def detect_time_ms(self, peer_id: str) -> int:
         """Compute detection time for the peer session."""
@@ -115,6 +179,27 @@ class BFDProcess(ProtocolBase):
         expired: list[str] = []
         for peer_id, session in sorted(self.sessions.items()):
             if now_ms - session.last_rx_ms >= self.detect_time_ms(peer_id):
+                old_state = BFDState(session.state)
                 session.state = BFDState.DOWN
                 expired.append(peer_id)
+                self.emit_trace(
+                    layer=Layer.L3,
+                    event_type=EventType.BFD_TIMEOUT,
+                    details={
+                        "peer_id": peer_id,
+                        "elapsed_ms": now_ms - session.last_rx_ms,
+                        "detect_time_ms": self.detect_time_ms(peer_id),
+                    },
+                )
+                if old_state != BFDState.DOWN:
+                    self.emit_trace(
+                        layer=Layer.L3,
+                        event_type=EventType.BFD_STATE_CHANGE,
+                        details={
+                            "peer_id": peer_id,
+                            "old_state": old_state.value,
+                            "new_state": BFDState.DOWN.value,
+                            "reason": "timeout",
+                        },
+                    )
         return expired

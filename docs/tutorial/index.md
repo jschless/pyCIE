@@ -68,6 +68,10 @@ ch07_services_and_operations
 3. Run exercise tests and edge-case tests.
 4. Capture a trace and explain one failure/reconvergence behavior.
 
+For detailed per-lab implementation intent and what each coding step is training:
+
+- [Pedagogical Lab Overview](../labs/pedagogical_overview)
+
 ## Suggested pacing
 
 - Foundations (Part I): 2-4 weeks part-time
